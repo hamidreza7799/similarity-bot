@@ -1,4 +1,6 @@
 from abc import ABC
+from typing import Iterable, Iterator
+from json import JSONEncoder
 
 
 class Data(ABC):
@@ -19,7 +21,8 @@ class HasPotentialObj(Data):
 	@staticmethod
 	def convert_to_leader_board_obj(potential_obj: Data):
 		return LeaderBoardObj(
-			potential_obj.owner_username, potential_obj.media_link, potential_obj.media_file_id, potential_obj.media_file_path,
+			potential_obj.owner_username, potential_obj.media_link, potential_obj.media_file_id,
+			potential_obj.media_file_path,
 			potential_obj.score
 		)
 
@@ -280,14 +283,19 @@ class RBTree:
 
 
 # Sorted link list Node
-class SortedLinkListNode:
+class SortedLinkListNode(JSONEncoder):
 	def __init__(self, data: LeaderBoardObj):
+		super(SortedLinkListNode, self).__init__()
 		self.data = data
 		self.next = None
 
+	def default(self, o):
+		return o.data.__dict__
+
 
 # Sorted Link List Data Structure
-class SortedLinkedList:
+class SortedLinkedList(Iterable):
+
 	def __init__(self):
 		self.head = None
 
@@ -331,6 +339,14 @@ class SortedLinkedList:
 	def deletion_all(self):
 		self.head = None
 
+	def __iter__(self) -> Iterator[LeaderBoardObj]:
+		result = []
+		current = self.head
+		while current is not None:
+			result += [current]
+			current = current.next
+		return iter(result)
+
 	def __str__(self):
 		result = []
 		temp = self.head
@@ -368,18 +384,19 @@ if __name__ == "__main__":
 	# leader_board.deletion(obj2)
 	# print(RBTree.pre_order(leader_board.root, leader_board.nil))
 	leader_board = SortedLinkedList()
-	obj1 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", 12))
-	obj2 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", 13))
-	obj3 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", 18))
-	obj4 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", 15))
-	obj5 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", 19))
+	obj1 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 12))
+	obj2 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 13))
+	obj3 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 18))
+	obj4 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 15))
+	obj5 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 19))
 	leader_board.insert(obj1)
 	leader_board.insert(obj2)
 	leader_board.insert(obj3)
 	leader_board.insert(obj4)
 	leader_board.insert(obj5)
-	print(leader_board)
-	a = leader_board.pruning(5)
-	print(leader_board, a)
-	print(leader_board.get_item(2).data.score)
-	print(len(leader_board))
+	# print(leader_board)
+	# a = leader_board.pruning(5)
+	# print(leader_board, a)
+	# print(leader_board.get_item(2).data.score)
+	# print(len(leader_board))
+	print(list(leader_board))
