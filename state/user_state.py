@@ -6,12 +6,12 @@ from pyrogram.types import (InlineQueryResultArticle, InputTextMessageContent,
 from pyrogram.types import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 from pykeyboard import InlineKeyboard
 from storage.data import *
+from race_config import NORMAL_USER_INITIAL_KEYBOARD, SUPERVISOR_INITIAL_KEYBOARD, ADMIN_INITIAL_KEYBOARD, NEXT_STATES, \
+	ADMIN_USER, SUPERVISOR_USERS
 from aipa.aipa import *
 import asyncio
 import os
 import json
-
-from bot.race_bot import ADMIN_USER, SUPERVISOR_USERS
 
 AIPA_CLIENT = AipaRestClient()
 AIPA_CLIENT.get_valid_access_token()
@@ -22,49 +22,19 @@ LEADER_BOARD_MAX_LENGTH = 10
 MINIMUM_SCORE_IN_LEADER_BOARD = -1
 LEADER_BOARD = SortedLinkedList()
 POTENTIAL_BOARD = RBTree()
-LOCK_RACE = True
 
 LEADER_BOARD.insert(SortedLinkListNode(LeaderBoardObj("h_azarbad77", "https://t.me/c/-1000088202234/295",
                                                       'AgACAgQAAxkBAAIBJ2Eg5rzBSUoOKTbqFgwICUUjiMxCAAIBtTEbJuYIUUo-xujHC2C7ZBZJLl0AAwEAAwIAA3gAA7s-BQABHgQ',
-                                                      "C:\\Users\\asus\\Desktop\\Arman\\race_bot\\user_images\\ronaldo\\race_image.jpg",
+                                                      "C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\user_images\\ronaldo\\race_image.jpg",
                                                       12)))
 LEADER_BOARD.insert(SortedLinkListNode(LeaderBoardObj("HR_Azarbad", "https://t.me/c/-1000925175130/252",
                                                       "AgACAgQAAxkBAAP8YSDEOnTz3YlFV0BrkEi-4ponqG8AAva1MRvPXAhR8geW3vrqkFddxrUvXQADAQADAgADeQAD88wCAAEeBA",
-                                                      "C:\\Users\\asus\\Desktop\\Arman\\race_bot\\user_images\\ronaldo\\race_image.jpg",
+                                                      "C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\user_images\\ronaldo\\race_image.jpg",
                                                       10)))
 POTENTIAL_BOARD.insert(RBNode(HasPotentialObj("h_azarbad77", "https://t.me/c/-1000088202234/295",
                                               'AgACAgQAAxkBAAIBJ2Eg5rzBSUoOKTbqFgwICUUjiMxCAAIBtTEbJuYIUUo-xujHC2C7ZBZJLl0AAwEAAwIAA3gAA7s-BQABHgQ',
-                                              "C:\\Users\\asus\\Desktop\\Arman\\race_bot\\user_images\\ronaldo\\race_image.jpg",
+                                              "C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\user_images\\ronaldo\\race_image.jpg",
                                               24)))
-
-NEXT_STATES = {
-	"normal_user_initial_state": 0
-}
-
-ADMIN_INITIAL_KEYBOARD = ReplyKeyboardMarkup(
-	[
-		["📣  " + "مشاهده نتایج "],  # First row
-		["📷  " + "مشاهده عکس مسابقه "],  # Second row
-		["⛳  " + "پایان مسابقه  "],  # Second row
-	],
-	resize_keyboard=True  # Make the keyboard smaller
-)
-SUPERVISOR_INITIAL_KEYBOARD = ReplyKeyboardMarkup(
-	[
-		["📣  " + "مشاهده نتایج "],  # First row
-		["📷  " + "مشاهده عکس مسابقه "],  # Second row
-		["⛳  " + "ارزیابی عکس‌ها  "],  # Second row
-	],
-	resize_keyboard=True  # Make the keyboard smaller
-)
-NORMAL_USER_INITIAL_KEYBOARD = ReplyKeyboardMarkup(
-	[
-		["📣  " + "مشاهده نتایج "],  # First row
-		["📷  " + "مشاهده عکس مسابقه "],  # Second row
-		["⛳  " + "ارسال عکس "],  # Second row
-	],
-	resize_keyboard=True  # Make the keyboard smaller
-)
 
 
 class State(ABC):
@@ -104,13 +74,20 @@ class NormalUserInitialState(State):
 		# 	InlineKeyboardButton('Back', 'pagination_keyboard#back'),
 		# 	InlineKeyboardButton('Close', 'pagination_keyboard#close')
 		# )
-		await self.client.send_photo(
-			self.username,
-			LEADER_BOARD.get_item(leader_board_number).data.media_file_id if min(len(LEADER_BOARD),
-			                                                                     LEADER_BOARD_MAX_LENGTH) > leader_board_number - 1 else None,
-			f'This is number {leader_board_number}',
-			reply_markup=paginate_keyboard
-		)
+		leader_board_obj = LEADER_BOARD.get_item(leader_board_number) if min(len(LEADER_BOARD),
+		                                                                     LEADER_BOARD_MAX_LENGTH) > leader_board_number - 1 else None
+		if leader_board_obj is None:
+			await self.client.send_message(
+				self.username,
+				'فعلا چیزی برای نمایش وجود ندارد...'
+			)
+		else:
+			await self.client.send_photo(
+				self.username,
+				leader_board_obj.data.media_file_id,
+				f'رتبه‌ی {leader_board_number} با امتیاز {leader_board_obj.data.score}',
+				reply_markup=paginate_keyboard
+			)
 
 	async def view_race_photo(self):
 		await self.client.send_photo(
@@ -125,7 +102,7 @@ class NormalUserInitialState(State):
 	async def default_function(self):
 		await self.client.send_message(
 			self.username,
-			None,
+			"شما کارهای زیر می‌توانید انجام دهید...",
 			reply_markup=ReplyKeyboardMarkup(
 				[
 					["📣  " + "مشاهده نتایج "],  # First row
@@ -139,7 +116,8 @@ class NormalUserInitialState(State):
 
 class NormalUserSendingPhotoState(State):
 	async def save_user_photo(self, message: Message):
-		user_image_file_path = os.path.join(os.getcwd(), "user_images", RACE_PHOTO_FILE, f'{message.chat.username}.jpg')
+		user_image_file_path = os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
+		                                    RACE_PHOTO_FILE, f'{message.chat.username}.jpg')
 		await message.download(
 			file_name=user_image_file_path
 		)
@@ -151,14 +129,17 @@ class NormalUserSendingPhotoState(State):
 	async def default_function(self):
 		await self.client.send_message(
 			self.username,
-			"لطفا عکس مورد نظر خود را ارسال کنید..."
+			"لطفا عکس مورد نظر خود را ارسال کنید...",
+			reply_markup=ReplyKeyboardRemove()
 		)
 
 	async def __check_similarity(self, message: Message, user_image_file_path: str):
 		aipa_response = await AIPA_CLIENT.post_face_verification(user_image_file_path,
-		                                                         os.path.join(os.getcwd(), "user_images",
-		                                                                      RACE_PHOTO_FILE,
-		                                                                      "race_image.jpg"))
+		                                                         os.path.join(
+			                                                         os.path.normpath(os.getcwd() + os.sep + os.pardir),
+			                                                         "user_images",
+			                                                         RACE_PHOTO_FILE,
+			                                                         "race_image.jpg"))
 
 		if not str(aipa_response.status_code).startswith('2'):
 			await self.client.send_message(
@@ -166,18 +147,24 @@ class NormalUserSendingPhotoState(State):
 				'متاسفانه مشکلی پیش آمده است. لطفا دوباره امتحان کنید...'
 			)
 		else:
-			similarity = json.loads(aipa_response.content)['similarity']
-			if similarity > MINIMUM_SCORE_IN_LEADER_BOARD:
+			aipa_response_content = json.loads(aipa_response.content)
+			similarity = aipa_response['similarity'] if 'similarity' in aipa_response else -1
+			if similarity == -1:
+				await self.client.send_message(
+					self.username,
+					'متاسفانه مشکلی پیش آمده است. لطفا دوباره امتحان کنید...'
+				)
+			elif similarity > MINIMUM_SCORE_IN_LEADER_BOARD:
 				POTENTIAL_BOARD.insert(RBNode(HasPotentialObj(owner_username=self.username, media_link=message.link,
 				                                              media_file_id=message.photo.file_id,
 				                                              media_file_path=user_image_file_path, score=similarity,
 				                                              migrate_to_persist_db=False)))
-				self.client.send_message(
+				await self.client.send_message(
 					self.username,
 					f'میزان شباهت {similarity} تشخیص داده شده است. عکس شما پتاسیل قرار گرفتن در نفرات برتر را دارد. لطفا منتظر تایید همکاران ما باشد.'
 				)
 			else:
-				self.client.send_message(
+				await self.client.send_message(
 					self.username,
 					f'میزان شباهت عکس شما، {similarity} تشخیص داده شده‌است... '
 				)
@@ -212,7 +199,7 @@ class SupervisorInitialState(NormalUserInitialState):
 	async def default_function(self):
 		await self.client.send_message(
 			self.username,
-			None,
+			"شما کارهای زیر می‌توانید انجام دهید...",
 			reply_markup=ReplyKeyboardMarkup(
 				[
 					["📣  " + "مشاهده نتایج "],  # First row
@@ -236,7 +223,7 @@ class SupervisorEvaluationState(State):
 		await self.client.send_photo(
 			self.username,
 			self.assigned_potential_obj.media_file_id,
-			"This is caption of photo",
+			"عکسی که باید ارزیابی کنید",
 			reply_markup=ReplyKeyboardMarkup(
 				[
 					["📣  " + " تایید"],  # First row
@@ -284,11 +271,9 @@ class AdminInitialState(NormalUserInitialState):
 			)
 		)
 
-	async def finish_race(self, user_states):
+	async def finish_race(self, user_states: {}):
 		# Set lock_state for all username in user_states
 		self.__lock_all_users(user_states)
-		# Lock race and prevent to add anything in leader and potential board (set mutex for it?)
-		self.__lock_race()
 		# Send finish_message for all users and inform them
 		await self.__send_finish_message(user_states.keys())
 		# Send leader board for all users
@@ -307,7 +292,7 @@ class AdminInitialState(NormalUserInitialState):
 			reply_markup=ReplyKeyboardRemove()
 		)
 
-	def __lock_all_users(self, user_states):
+	def __lock_all_users(self, user_states: {}):
 		for username in user_states.keys():
 			user_states[username] = NormalUserLockState(username, self.client)
 
@@ -329,11 +314,12 @@ class AdminInitialState(NormalUserInitialState):
 	async def __send_leader_board(self, all_username):
 		global LEADER_BOARD_MAX_LENGTH
 		for index in range(1, min(len(LEADER_BOARD), LEADER_BOARD_MAX_LENGTH) + 1):
+			leader_board_obj = LEADER_BOARD.get_item(index)
 			for username in all_username:
 				await self.client.send_photo(
 					username,
-					LEADER_BOARD.get_item(index).data.media_file_id,
-					f'This is number {index}'
+					leader_board_obj.data.media_file_id,
+					f'رتبه‌ی {index} با امتیاز {leader_board_obj.data.score}',
 				)
 
 	def __remove_potential_board(self):
@@ -361,25 +347,32 @@ class AdminWaitForStartNewRace(State):
 			"اگر می‌خواهید مسابقه جدیدی را شروع کنید، کافی است عکسی را ارسال کنید..."
 		)
 
-	async def start_new_race(self, user_states: dict, media_link: str, media_file_id: str):
+	async def start_new_race(self, user_states: {}, message: Message):
 		# Set race information
-		self.__set_race_information(media_link, media_file_id)
+		self.__set_race_information(message)
 		# Remove potential board
 		self.__remove_potential_board()
 		# Remove leader board
 		self.__remove_leader_board()
-		# Unlock race
-		self.__unlock_race()
 		# Unlock current users state
 		self.__unlock_all_users(user_states)
 		# Send start race message for all users
 		await self.__send_start_race_message(user_states.keys())
 
-	def __set_race_information(self, media_link: str, media_file_id: str):
-		global MINIMUM_SCORE_IN_LEADER_BOARD, RACE_PHOTO_MEDIA_FILE_ID, RACE_PHOTO_MEDIA_LINK
+	def __set_race_information(self, message: Message):
+		global MINIMUM_SCORE_IN_LEADER_BOARD, RACE_PHOTO_MEDIA_FILE_ID, RACE_PHOTO_MEDIA_LINK, RACE_PHOTO_FILE
 		MINIMUM_SCORE_IN_LEADER_BOARD = -1
-		RACE_PHOTO_MEDIA_FILE_ID = media_file_id
-		RACE_PHOTO_MEDIA_LINK = media_link
+		RACE_PHOTO_MEDIA_FILE_ID = message.photo.file_id
+		RACE_PHOTO_MEDIA_LINK = message.link
+		RACE_PHOTO_FILE = str(datetime.utcnow()).split('.')[0].replace(" ", "_").replace(":", "-")
+		if not os.path.exists(os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
+		                                   RACE_PHOTO_FILE)):
+			os.mkdir(os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
+			                      RACE_PHOTO_FILE))
+		race_image_file_path = os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
+		                                    RACE_PHOTO_FILE, f'race_image.jpg')
+		loop = asyncio.get_event_loop()
+		loop.create_task(message.download(file_name=race_image_file_path))
 
 	def __remove_potential_board(self):
 		POTENTIAL_BOARD.deletion_all()
@@ -388,10 +381,9 @@ class AdminWaitForStartNewRace(State):
 		LEADER_BOARD.deletion_all()
 
 	def __unlock_race(self):
-		global LOCK_RACE
 		LOCK_RACE = False
 
-	def __unlock_all_users(self, user_states):
+	def __unlock_all_users(self, user_states: {}):
 		for username in user_states.keys():
 			user_states[username] = NormalUserInitialState(username, self.client)
 
@@ -399,7 +391,6 @@ class AdminWaitForStartNewRace(State):
 			user_states[username] = SupervisorInitialState(username, self.client)
 
 	async def __send_start_race_message(self, all_username: list):
-		global ADMIN_INITIAL_KEYBOARD, SUPERVISOR_INITIAL_KEYBOARD, NORMAL_USER_INITIAL_KEYBOARD
 		for username in all_username:
 			if username == ADMIN_USER:
 				keyboard = ADMIN_INITIAL_KEYBOARD

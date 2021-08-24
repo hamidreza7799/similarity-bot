@@ -6,7 +6,7 @@ class Data(ABC):
 		self.owner_username = owner_username
 		self.media_link = media_link
 		self.media_file_id = media_file_id
-		self.media_file_path = media_file_id
+		self.media_file_path = media_file_path
 		self.score = score
 		self.migrate_to_persist_db = migrate_to_persist_db
 
@@ -51,7 +51,7 @@ class RBNode:
 # Red Black tree
 class RBTree:
 	def __init__(self):
-		self.nil = RBNode(LeaderBoardObj("", "", "", False))
+		self.nil = RBNode(LeaderBoardObj("", "", "", "", False))
 		self.nil.red = False
 		self.nil.left = None
 		self.nil.right = None

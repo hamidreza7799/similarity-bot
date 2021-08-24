@@ -218,18 +218,19 @@ class AipaRestClient(RestClient, metaclass=Singleton):
 
 	async def post_face_verification(self, first_file_path, second_file_path):
 		params = {'delete-file-after-process': 'y'}
-		files = [('first_file', open(first_file_path, 'rb')), ('second_file', open(second_file_path, 'rb'))]
 		headers = {'Authorization': self.AUTH_PATTERN % self.get_valid_access_token()}
 		loop = asyncio.get_event_loop()
 		print(f'VERIFICATION for {PathUtil.path_to_name(first_file_path)}')
-		response = await loop.run_in_executor(
-			None,
-			functools.partial(requests.post,
-			                  url=self.BASE_URL + self.FACE_VERIFICATION_URL,
-			                  headers=headers, params=params, files=files)
+		with open(first_file_path, mode='rb') as first_file:
+			with open(second_file_path, mode='rb') as second_file:
+				files = [('first_file', first_file), ('second_file', second_file)]
+				response = await loop.run_in_executor(
+					None,
+					functools.partial(requests.post,
+					                  url=self.BASE_URL + self.FACE_VERIFICATION_URL,
+					                  headers=headers, params=params, files=files)
 
-		)
-		print(response.content)
+				)
 		return response
 
 
@@ -237,9 +238,9 @@ async def main():
 	logging.basicConfig(level=logging.INFO)
 	client = AipaRestClient()
 	client.get_valid_access_token()
-	first_file_path = os.path.join('C:\\Users\\asus\\Desktop\\Arman\\race_bot\\aipa', 'ronaldo.jpg')
-	second_file_path = os.path.join('C:\\Users\\asus\\Desktop\\Arman\\race_bot\\aipa', 'ronaldo2.jpg')
-	third_file_path = os.path.join('C:\\Users\\asus\\Desktop\\Arman\\race_bot\\aipa', 'messi.jpg')
+	first_file_path = os.path.join('C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\aipa', 'ronaldo.jpg')
+	second_file_path = os.path.join('C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\aipa', 'ronaldo2.jpg')
+	third_file_path = os.path.join('C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\aipa', 'messi.jpg')
 	await asyncio.gather(*(client.post_face_verification(first_file_path, second_file_path) for i in range(3)))
 
 
@@ -257,7 +258,7 @@ if __name__ == '__main__':
 	# loop = asyncio.get_event_loop()
 	start2 = time.perf_counter()
 	for i in range(5):
-		response = asyncio.run(main())
+		res = asyncio.run(main())
 	# response2 = asyncio.run(client.post_face_verification(first_file_path, third_file_path))
 	elapsed2 = time.perf_counter() - start2
 	print(f"{__file__} executed in {elapsed2:0.2f} seconds.")

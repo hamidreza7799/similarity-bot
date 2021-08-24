@@ -1,74 +1,63 @@
 from pyrogram import Client, idle, filters
 from pyrogram.types import Message
 from state.user_state import *
-
+from race_config import ADMIN_USER, SUPERVISOR_USERS, photo_from_admin_user_filter, api_id, api_hash, bot_token, \
+	SUPERVISOR_INITIAL_KEYBOARD, ADMIN_INITIAL_KEYBOARD, NORMAL_USER_INITIAL_KEYBOARD
 import tgcrypto
-import os
-from configparser import ConfigParser
 import asyncio
 
-ADMIN_USER = "h_azarbad77"
-SUPERVISOR_USERS = ["vahidsavabieh"]
 USER_STATES = {}
-
-config = ConfigParser()
-config_path = os.path.join(os.getcwd(), 'bot_config.ini')
-if not os.path.isfile(config_path):
-	raise Exception()
-config.read(config_path)
-bot_token = config.get('race_bot', 'bot_token')
-api_id = config.get('race_bot', 'api_id')
-api_hash = config.get('race_bot', 'api_hash')
 app = Client('my_bot', bot_token=bot_token, api_hash=api_hash, api_id=api_id)
-
-
-photo_from_admin_user_filter = filters.create(lambda _, __, query: query.from_user.username == ADMIN_USER)
+LOCK_RACE = True
 
 
 @app.on_message(filters.new_chat_members | filters.command(['start']))
 async def welcome(client: Client, message: Message):
 	if message.chat.username in SUPERVISOR_USERS:
-		USER_STATES[message.chat.username] = SupervisorInitialState(message.chat.username, app)
-		await app.send_message(
-			message.chat.id,
-			"This is initial of supervisor",
-			reply_markup=ReplyKeyboardMarkup(
-				[
-					["📣  " + "مشاهده نتایج "],  # First row
-					["📷  " + "مشاهده عکس مسابقه "],  # Second row
-					["⛳  " + "ارزیابی عکس‌ها  "],  # Second row
-				],
-				resize_keyboard=True  # Make the keyboard smaller
+		if LOCK_RACE:
+			USER_STATES[message.chat.username] = SupervisorLockState(message.chat.username, app)
+			await app.send_message(
+				message.chat.id,
+				"This is text in initial state for supervisor",
+				reply_markup=ReplyKeyboardRemove()
 			)
-		)
+		else:
+			USER_STATES[message.chat.username] = SupervisorInitialState(message.chat.username, app)
+			await app.send_message(
+				message.chat.id,
+				"This is text in initial state for supervisor",
+				reply_markup=SUPERVISOR_INITIAL_KEYBOARD
+			)
 	elif message.chat.username == ADMIN_USER:
-		USER_STATES[message.chat.username] = AdminInitialState(message.chat.username, app)
-		await app.send_message(
-			message.chat.id,
-			"This is initial of admin",
-			reply_markup=ReplyKeyboardMarkup(
-				[
-					["📣  " + "مشاهده نتایج "],  # First row
-					["📷  " + "مشاهده عکس مسابقه "],  # Second row
-					["⛳  " + "پایان مسابقه  "],  # Second row
-				],
-				resize_keyboard=True  # Make the keyboard smaller
+		if LOCK_RACE:
+			USER_STATES[message.chat.username] = AdminWaitForStartNewRace(message.chat.username, app)
+			await app.send_message(
+				message.chat.id,
+				"This is initial text of admin",
+				reply_markup=ReplyKeyboardRemove()
 			)
-		)
+		else:
+			USER_STATES[message.chat.username] = AdminInitialState(message.chat.username, app)
+			await app.send_message(
+				message.chat.id,
+				"This is initial of admin",
+				reply_markup=ADMIN_INITIAL_KEYBOARD
+			)
 	else:
-		USER_STATES[message.chat.username] = NormalUserInitialState(message.chat.username, app)
-		await app.send_message(
-			message.chat.id,
-			"This is example",
-			reply_markup=ReplyKeyboardMarkup(
-				[
-					["📣  " + "مشاهده نتایج "],  # First row
-					["📷  " + "مشاهده عکس مسابقه "],  # Second row
-					["⛳  " + "ارسال عکس "],  # Second row
-				],
-				resize_keyboard=True  # Make the keyboard smaller
+		if LOCK_RACE:
+			USER_STATES[message.chat.username] = NormalUserLockState(message.chat.username, app)
+			await app.send_message(
+				message.chat.id,
+				"This is initial for normal user",
+				reply_markup=ReplyKeyboardRemove()
 			)
-		)
+		else:
+			USER_STATES[message.chat.username] = NormalUserInitialState(message.chat.username, app)
+			await app.send_message(
+				message.chat.id,
+				"This is initial for normal user",
+				reply_markup=NORMAL_USER_INITIAL_KEYBOARD
+			)
 
 
 # Function for normal user and supervisor
@@ -89,7 +78,7 @@ async def view_result(client: Client, message: Message):
 	try:
 		if user_state is not None:
 			await user_state.view_leader_board(leader_board_number=1)
-	except:
+	except Exception as error:
 		await user_state.default_function()
 
 
@@ -125,7 +114,7 @@ async def save_user_photo(client: Client, message: Message):
 		user_state = user_state.next_state()
 		USER_STATES[message.chat.username] = user_state
 		await user_state.default_function()
-	except:
+	except Exception as error:
 		await user_state.default_function()
 
 
@@ -171,28 +160,34 @@ async def confirm_photo(client: Client, message: Message):
 # Function for admin
 @app.on_message(filters.regex("پایان مسابقه") | filters.command(['finish_race']))
 async def finish_race(client: Client, message: Message):
+	global LOCK_RACE
 	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
 	try:
 		if user_state is not None:
+			LOCK_RACE = True
 			await user_state.finish_race(USER_STATES)
 			user_state = user_state.next_state()
 			USER_STATES[message.chat.username] = user_state
 			await user_state.default_function()
 	except Exception as exception:
+		LOCK_RACE = False
 		await user_state.default_function()
 
 
 # Function for admin
 @app.on_message(filters.photo & photo_from_admin_user_filter)
 async def start_new_race(client: Client, message: Message):
+	global LOCK_RACE
 	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
 	try:
 		if user_state is not None:
-			await user_state.start_new_race(USER_STATES, message.link, message.photo.file_id)
+			LOCK_RACE = False
+			await user_state.start_new_race(USER_STATES, message)
 			user_state = user_state.next_state()
 			USER_STATES[message.chat.username] = user_state
 			await user_state.default_function()
-	except:
+	except Exception as error:
+		LOCK_RACE = True
 		await user_state.default_function()
 
 
