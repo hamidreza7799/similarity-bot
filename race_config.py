@@ -39,7 +39,8 @@ NORMAL_USER_INITIAL_KEYBOARD = ReplyKeyboardMarkup(
 photo_from_admin_user_filter = filters.create(lambda _, __, query: query.from_user.username == ADMIN_USER)
 
 config = ConfigParser()
-config_path = os.path.join(os.getcwd(), 'bot_config.ini')
+config_path = os.path.join(os.path.join(
+	os.path.normpath(os.getcwd() + os.sep + os.pardir), 'config', 'bot_config.ini'))
 if not os.path.isfile(config_path):
 	raise Exception()
 config.read(config_path)
