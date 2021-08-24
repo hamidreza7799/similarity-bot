@@ -148,7 +148,7 @@ class NormalUserSendingPhotoState(State):
 			)
 		else:
 			aipa_response_content = json.loads(aipa_response.content)
-			similarity = aipa_response['similarity'] if 'similarity' in aipa_response else -1
+			similarity = aipa_response_content['similarity'] if 'similarity' in aipa_response_content else -1
 			if similarity == -1:
 				await self.client.send_message(
 					self.username,
