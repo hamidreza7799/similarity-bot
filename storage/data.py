@@ -1,16 +1,20 @@
 from abc import ABC
 from typing import Iterable, Iterator
-from json import JSONEncoder
+from json import JSONEncoder, JSONDecoder
 
 
-class Data(ABC):
+class Data(ABC, JSONEncoder):
 	def __init__(self, owner_username, media_link, media_file_id, media_file_path, score, migrate_to_persist_db=False):
+		super(Data, self).__init__()
 		self.owner_username = owner_username
 		self.media_link = media_link
 		self.media_file_id = media_file_id
 		self.media_file_path = media_file_path
 		self.score = score
 		self.migrate_to_persist_db = migrate_to_persist_db
+
+	def default(self, o):
+		return o.__dict__
 
 
 class HasPotentialObj(Data):
