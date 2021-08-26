@@ -1,9 +1,9 @@
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Iterable, Iterator
 from json import JSONEncoder, JSONDecoder
 
 
-class Data(ABC, JSONEncoder):
+class Data(ABC):
 	def __init__(self, owner_username, media_link, media_file_id, media_file_path, score, migrate_to_persist_db=False):
 		super(Data, self).__init__()
 		self.owner_username = owner_username
@@ -13,8 +13,15 @@ class Data(ABC, JSONEncoder):
 		self.score = score
 		self.migrate_to_persist_db = migrate_to_persist_db
 
-	def default(self, o):
-		return o.__dict__
+	def json_serializer(self):
+		return {
+			"owner_username": self.owner_username,
+			"media_link": self.media_link,
+			"media_file_id": self.media_file_id,
+			"media_file_path": self.media_file_path,
+			"score": self.score,
+			"migrate_to_persist_db": self.migrate_to_persist_db
+		}
 
 
 class HasPotentialObj(Data):
@@ -295,15 +302,8 @@ class SortedLinkListNode:
 
 
 class SortedLinkListNodeEncoder(JSONEncoder):
-	def default(self, o):
-		return {
-			"owner_username": o.data.owner_username,
-			"media_link": o.data.media_link,
-			"media_file_id": o.data.media_file_id,
-			"media_file_path": o.data.media_file_path,
-			"score": o.data.score,
-			"migrate_to_persist_db": o.data.migrate_to_persist_db
-		}
+	def default(self, o: SortedLinkListNode):
+		return o.data.json_serializer()
 
 
 # Sorted Link List Data Structure

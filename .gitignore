@@ -6,3 +6,4 @@ user_images/
 *.session
 config
 storage/leader_boards_backup
+storage/user_states.json

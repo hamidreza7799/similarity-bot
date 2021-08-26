@@ -1,6 +1,7 @@
 from configparser import ConfigParser
 from storage.data import *
 from datetime import datetime
+from state.user_state import NormalUserInitialState, SupervisorEvaluationState, StateJsonEncoder
 import os, json
 import psycopg2
 
@@ -23,12 +24,16 @@ class PostgresDriver:
 		leader_board_json_file_path = os.path.join(os.getcwd(), 'leader_boards_backup',
 		                                           str(datetime.utcnow()).replace(" ", "_").replace(":", "-") + ".json")
 		with open(leader_board_json_file_path, mode='w') as backup_file:
-			json.dump(leader_board_list, backup_file, cls= SortedLinkListNodeEncoder)
+			json.dump(leader_board_list, backup_file, cls=SortedLinkListNodeEncoder)
 
-	def migrate_and_backup_user_states(self):
-		pass
+	@staticmethod
+	def backup_user_states(user_states: {}):
+		user_states_json_file_path = os.path.join(os.getcwd(), "user_states.json")
+		with open(user_states_json_file_path, mode='w') as backup_file:
+			json.dump(user_states, backup_file, cls=StateJsonEncoder)
 
-	def migrate_and_backup_potential_board(self):
+	@staticmethod
+	def migrate_and_backup_potential_board(potential_board: RBTree):
 		pass
 
 	def __connect(self):
@@ -109,7 +114,12 @@ class PostgresDriver:
 
 
 if __name__ == '__main__':
-	# driver = PostgresDriver()
+	driver = PostgresDriver()
+	user_state = {
+		"HR_Azarbad": NormalUserInitialState("HR_Azarbad", None),
+		"HR_Azarbad2": SupervisorEvaluationState("HR_Azarbad2", None, HasPotentialObj("hamidreza", "112", "ldk", "", 12)),
+	}
+	PostgresDriver.backup_user_states(user_state)
 	leader_board = SortedLinkedList()
 	obj1 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 12))
 	obj2 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 13))
@@ -122,4 +132,6 @@ if __name__ == '__main__':
 	leader_board.insert(obj3)
 	leader_board.insert(obj4)
 	leader_board.insert(obj5)
-	PostgresDriver.backup_leader_board(leader_board)
+	# PostgresDriver.backup_leader_board(leader_board)
+# print(str(obj1.__class__))
+# print(obj1.__dict__)

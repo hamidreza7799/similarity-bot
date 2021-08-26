@@ -38,7 +38,7 @@ POTENTIAL_BOARD.insert(RBNode(HasPotentialObj("h_azarbad77", "https://t.me/c/-10
 
 
 class State(ABC):
-	def __init__(self, username: str, client: Client):
+	def __init__(self, username: str, client: Client = None):
 		self.username = username
 		self.client = client
 
@@ -49,6 +49,15 @@ class State(ABC):
 	@abstractmethod
 	async def default_function(self):
 		pass
+
+	@abstractmethod
+	def json_serializer(self):
+		pass
+
+
+class StateJsonEncoder(JSONEncoder):
+	def default(self, o: State):
+		return o.json_serializer()
 
 
 # Normal user states
@@ -62,6 +71,9 @@ class NormalUserLockState(State):
 			"هنوز مسابقه جدیدی شروع نشده‌است...",
 			reply_markup=ReplyKeyboardRemove()
 		)
+
+	def json_serializer(self):
+		return {"class_type": self.__class__}
 
 
 class NormalUserInitialState(State):
@@ -112,6 +124,9 @@ class NormalUserInitialState(State):
 				resize_keyboard=True  # Make the keyboard smaller
 			)
 		)
+
+	def json_serializer(self):
+		return {"class_type": str(self.__class__)}
 
 
 class NormalUserSendingPhotoState(State):
@@ -169,6 +184,9 @@ class NormalUserSendingPhotoState(State):
 					f'میزان شباهت عکس شما، {similarity} تشخیص داده شده‌است... '
 				)
 
+	def json_serializer(self):
+		return {"class_type": str(self.__class__)}
+
 
 # Supervisor states
 class SupervisorLockState(State):
@@ -181,6 +199,9 @@ class SupervisorLockState(State):
 			"هنوز مسابقه جدیدی شروع نشده‌است...",
 			reply_markup=ReplyKeyboardRemove()
 		)
+
+	def json_serializer(self):
+		return {"class_type": str(self.__class__)}
 
 
 class SupervisorInitialState(NormalUserInitialState):
@@ -212,7 +233,7 @@ class SupervisorInitialState(NormalUserInitialState):
 
 
 class SupervisorEvaluationState(State):
-	def __init__(self, username: str, client: Client, assigned_potential_obj: HasPotentialObj):
+	def __init__(self, username: str, client: Client = None, assigned_potential_obj: HasPotentialObj = None):
 		self.assigned_potential_obj = assigned_potential_obj
 		super(SupervisorEvaluationState, self).__init__(username, client)
 
@@ -250,6 +271,9 @@ class SupervisorEvaluationState(State):
 			self.username,
 			"Reject"
 		)
+
+	def json_serializer(self):
+		return {"class_type": str(self.__class__), "assign_obj": self.assigned_potential_obj.json_serializer()}
 
 
 # Admin states
@@ -403,3 +427,6 @@ class AdminWaitForStartNewRace(State):
 				"مسابقه‌ی جدیدی شروع شده‌است....",
 				reply_markup=keyboard
 			)
+
+	def json_serializer(self):
+		return {"class_type": str(self.__class__)}
