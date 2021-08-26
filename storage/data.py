@@ -19,7 +19,8 @@ class HasPotentialObj(Data):
 	@staticmethod
 	def convert_to_leader_board_obj(potential_obj: Data):
 		return LeaderBoardObj(
-			potential_obj.owner_username, potential_obj.media_link, potential_obj.media_file_id, potential_obj.media_file_path,
+			potential_obj.owner_username, potential_obj.media_link, potential_obj.media_file_id,
+			potential_obj.media_file_path,
 			potential_obj.score
 		)
 
@@ -56,6 +57,7 @@ class RBTree:
 		self.nil.left = None
 		self.nil.right = None
 		self.root = self.nil
+		self.length = 0
 
 	@staticmethod
 	def pre_order(current_node: RBNode, nil: RBNode):
@@ -91,6 +93,7 @@ class RBTree:
 
 	def deletion_all(self):
 		self.root = self.nil
+		self.length = 0
 
 	# Node deletion
 	def deletion(self, node: RBNode):
@@ -122,6 +125,7 @@ class RBTree:
 			y.red = custom_node.red
 		if original_color_is_black:
 			self.__delete_fix(x)
+		self.length -= 1
 
 	def __delete_fix(self, data: Data):
 		while data != self.root and not data.red:
@@ -198,6 +202,7 @@ class RBTree:
 		else:
 			parent.right = new_node
 
+		self.length += 1
 		# Fix the tree
 		self.__fix_insert(new_node)
 
@@ -306,17 +311,25 @@ class SortedLinkedList:
 			new_node.next = current.next
 			current.next = new_node
 
-	def pruning(self, max_length: int):
+	def pruning(self, max_length: int) -> None:
 		current = self.head
 		while max_length > 1:
 			if current is None:
-				return -1
+				return
 			current = current.next
 			max_length -= 1
 
 		if current is not None:
 			current.next = None
-			return current.data.score
+			return
+
+	def find_minimum_item(self) -> SortedLinkListNode:
+		current = self.head
+		while current is not None:
+			if current.next is not None:
+				current = current.next
+			else:
+				return current
 
 	def get_item(self, index: int):
 		current = self.head

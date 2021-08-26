@@ -4,8 +4,8 @@ import os
 from pyrogram import filters
 from pyrogram.types import ReplyKeyboardMarkup
 
-ADMIN_USER = "MajidSZ"
-SUPERVISOR_USERS = ["RahpooCo"]
+ADMIN_USER = None
+SUPERVISOR_USERS = ["HR_Azarbad"]
 
 NEXT_STATES = {
 	"normal_user_initial_state": 0
@@ -40,6 +40,7 @@ photo_from_admin_user_filter = filters.create(lambda _, __, query: query.from_us
 
 config = ConfigParser()
 config_path = os.path.join(os.getcwd(), 'bot_config.ini')
+print(config_path)
 if not os.path.isfile(config_path):
 	raise Exception()
 config.read(config_path)

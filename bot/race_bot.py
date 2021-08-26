@@ -1,14 +1,15 @@
-from pyrogram import Client, idle, filters
-from pyrogram.types import Message
+import os
+import sys
+
+sys.path.insert(1, os.path.normpath(os.getcwd() + os.sep + os.pardir))
+from pyrogram import idle, filters
 from state.user_state import *
 from race_config import ADMIN_USER, SUPERVISOR_USERS, photo_from_admin_user_filter, api_id, api_hash, bot_token, \
 	SUPERVISOR_INITIAL_KEYBOARD, ADMIN_INITIAL_KEYBOARD, NORMAL_USER_INITIAL_KEYBOARD
-import tgcrypto
-import asyncio
 
 USER_STATES = {}
 app = Client('my_bot', bot_token=bot_token, api_hash=api_hash, api_id=api_id)
-LOCK_RACE = True
+LOCK_RACE = False
 
 
 @app.on_message(filters.new_chat_members | filters.command(['start']))
@@ -111,8 +112,10 @@ async def change_initial_state_to_sending_photo_state(client: Client, message: M
 async def save_user_photo(client: Client, message: Message):
 	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
 	try:
-		await user_state.save_user_photo(message)
-		user_state = user_state.next_state()
+		aipa_state = user_state.save_user_photo(message)
+		USER_STATES[message.chat.username] = aipa_state
+		await aipa_state.work_with_aipa(message)
+		user_state = aipa_state.next_state()
 		USER_STATES[message.chat.username] = user_state
 		await user_state.default_function()
 	except Exception as error:

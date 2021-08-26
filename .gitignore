@@ -4,3 +4,5 @@ venv
 user_images
 config
 storage/leader_boards_backup
+storage/potential_boards_backup
+storage/user_states.json

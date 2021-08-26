@@ -115,13 +115,8 @@ class NormalUserInitialState(State):
 
 
 class NormalUserSendingPhotoState(State):
-	async def save_user_photo(self, message: Message):
-		user_image_file_path = os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
-		                                    RACE_PHOTO_FILE, f'{message.chat.username}.jpg')
-		await message.download(
-			file_name=user_image_file_path
-		)
-		await self.__check_similarity(message, user_image_file_path)
+	def save_user_photo(self, message: Message):
+		return NormalUserWaitForAIPAResult(self.username, self.client)
 
 	def next_state(self):
 		return NormalUserInitialState(self.username, self.client)
@@ -131,6 +126,26 @@ class NormalUserSendingPhotoState(State):
 			self.username,
 			"لطفا عکس مورد نظر خود را ارسال کنید...",
 			reply_markup=ReplyKeyboardRemove()
+		)
+
+
+class NormalUserWaitForAIPAResult(State):
+	def next_state(self):
+		return NormalUserInitialState(self.username, self.client)
+
+	async def work_with_aipa(self, message: Message):
+		user_image_file_path = os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
+		                                    RACE_PHOTO_FILE, f'{message.chat.username}.jpg')
+		await message.download(
+			file_name=user_image_file_path
+		)
+		await self.default_function()
+		await self.__check_similarity(message, user_image_file_path)
+
+	async def default_function(self):
+		await self.client.send_message(
+			self.username,
+			'مدل در حال بررسی میزان شباهت می‌باشد. منتظر باشید...'
 		)
 
 	async def __check_similarity(self, message: Message, user_image_file_path: str):
@@ -152,7 +167,7 @@ class NormalUserSendingPhotoState(State):
 			if similarity == -1:
 				await self.client.send_message(
 					self.username,
-					'متاسفانه مشکلی پیش آمده است. لطفا دوباره امتحان کنید...'
+					'تصویر ارسالی مشکل دارد. لطفا دوباره امتحان کنید...'
 				)
 			elif similarity > MINIMUM_SCORE_IN_LEADER_BOARD:
 				POTENTIAL_BOARD.insert(RBNode(HasPotentialObj(owner_username=self.username, media_link=message.link,
@@ -188,7 +203,7 @@ class SupervisorInitialState(NormalUserInitialState):
 		potential_photo = POTENTIAL_BOARD.find_minimum_data()
 		if potential_photo is not None:
 			POTENTIAL_BOARD.deletion(potential_photo)
-			return SupervisorEvaluationState(self.username, self.client, potential_photo.data)
+			return SupervisorEvaluationState(self.username, self.client, potential_photo.data, POTENTIAL_BOARD.length)
 		else:
 			await self.client.send_message(
 				self.username,
@@ -212,8 +227,9 @@ class SupervisorInitialState(NormalUserInitialState):
 
 
 class SupervisorEvaluationState(State):
-	def __init__(self, username: str, client: Client, assigned_potential_obj: HasPotentialObj):
+	def __init__(self, username: str, client: Client, assigned_potential_obj: HasPotentialObj, potential_board_length: int):
 		self.assigned_potential_obj = assigned_potential_obj
+		self.potential_board_length = potential_board_length
 		super(SupervisorEvaluationState, self).__init__(username, client)
 
 	def next_state(self):
@@ -223,7 +239,7 @@ class SupervisorEvaluationState(State):
 		await self.client.send_photo(
 			self.username,
 			self.assigned_potential_obj.media_file_id,
-			"عکسی که باید ارزیابی کنید",
+			f'عکسی که باید ارزیابی کنید. تعداد {self.potential_board_length} باقی است...',
 			reply_markup=ReplyKeyboardMarkup(
 				[
 					["📣  " + " تایید"],  # First row
@@ -238,7 +254,9 @@ class SupervisorEvaluationState(State):
 		corresponding_leader_board_obj = HasPotentialObj.convert_to_leader_board_obj(self.assigned_potential_obj)
 		if corresponding_leader_board_obj.score > MINIMUM_SCORE_IN_LEADER_BOARD:
 			LEADER_BOARD.insert(SortedLinkListNode(corresponding_leader_board_obj))
-			MINIMUM_SCORE_IN_LEADER_BOARD = LEADER_BOARD.pruning(LEADER_BOARD_MAX_LENGTH)
+			leader_board_minimum_item = LEADER_BOARD.find_minimum_item()
+			if leader_board_minimum_item is not None:
+				MINIMUM_SCORE_IN_LEADER_BOARD = leader_board_minimum_item.data.score
 
 		await self.client.send_message(
 			self.username,
