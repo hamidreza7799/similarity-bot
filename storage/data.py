@@ -63,7 +63,8 @@ class RBNode:
 
 
 # Red Black tree
-class RBTree:
+class RBTree(Iterable):
+
 	def __init__(self):
 		self.nil = RBNode(LeaderBoardObj("", "", "", "", False))
 		self.nil.red = False
@@ -71,11 +72,14 @@ class RBTree:
 		self.nil.right = None
 		self.root = self.nil
 
+	def __iter__(self) -> Iterator[RBNode]:
+		return iter(RBTree.pre_order(self.root, self.nil))
+
 	@staticmethod
 	def pre_order(current_node: RBNode, nil: RBNode):
 		if current_node is nil:
 			return []
-		return RBTree.pre_order(current_node.left, nil) + [current_node.data] + RBTree.pre_order(
+		return RBTree.pre_order(current_node.left, nil) + [current_node] + RBTree.pre_order(
 			current_node.right, nil)
 
 	def find_minimum_data(self):
@@ -291,6 +295,11 @@ class RBTree:
 		else:
 			u.parent.right = v
 		v.parent = u.parent
+
+
+class RBTreeNodeEncoder(JSONEncoder):
+	def default(self, o: RBNode):
+		return o.data.json_serializer()
 
 
 # Sorted link list Node

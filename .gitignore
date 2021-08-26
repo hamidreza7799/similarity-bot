@@ -7,3 +7,4 @@ user_images/
 config
 storage/leader_boards_backup
 storage/user_states.json
+storage/potential_boards_backup

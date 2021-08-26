@@ -33,8 +33,12 @@ class PostgresDriver:
 			json.dump(user_states, backup_file, cls=StateJsonEncoder)
 
 	@staticmethod
-	def migrate_and_backup_potential_board(potential_board: RBTree):
-		pass
+	def backup_potential_board(potential_board: RBTree):
+		potential_board_list = list(potential_board)
+		potential_board_json_file_path = os.path.join(os.getcwd(), 'potential_boards_backup',
+		                                           str(datetime.utcnow()).replace(" ", "_").replace(":", "-") + ".json")
+		with open(potential_board_json_file_path, mode='w') as backup_file:
+			json.dump(potential_board_list, backup_file, cls=RBTreeNodeEncoder)
 
 	def __connect(self):
 		""" Connect to the PostgreSQL database server """
@@ -133,5 +137,18 @@ if __name__ == '__main__':
 	leader_board.insert(obj4)
 	leader_board.insert(obj5)
 	# PostgresDriver.backup_leader_board(leader_board)
+	leader_board = RBTree()
+	obj1 = RBNode(HasPotentialObj("hamidreza", "112", "ldk", "", 12))
+	obj2 = RBNode(HasPotentialObj("hamidreza", "112", "ldk", "", 13))
+	obj3 = RBNode(HasPotentialObj("hamidreza", "112", "ldk", "", 18))
+	obj4 = RBNode(HasPotentialObj("hamidreza", "112", "ldk", "", 15))
+	obj5 = RBNode(HasPotentialObj("hamidreza", "112", "ldk", "", 19))
+	# print(obj1.data.__dict__)
+	leader_board.insert(obj1)
+	leader_board.insert(obj2)
+	leader_board.insert(obj3)
+	leader_board.insert(obj4)
+	leader_board.insert(obj5)
+	PostgresDriver.backup_potential_board(leader_board)
 # print(str(obj1.__class__))
 # print(obj1.__dict__)
