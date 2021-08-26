@@ -13,6 +13,7 @@ LOCK_RACE = True
 
 @app.on_message(filters.new_chat_members | filters.command(['start']))
 async def welcome(client: Client, message: Message):
+	global LOCK_RACE
 	if message.chat.username in SUPERVISOR_USERS:
 		if LOCK_RACE:
 			USER_STATES[message.chat.username] = SupervisorLockState(message.chat.username, app)
