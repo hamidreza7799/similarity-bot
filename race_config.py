@@ -4,8 +4,8 @@ import os
 from pyrogram import filters
 from pyrogram.types import ReplyKeyboardMarkup
 
-ADMIN_USER = None
-SUPERVISOR_USERS = ["HR_Azarbad"]
+ADMIN_USER = 'MajidSZ'
+SUPERVISOR_USERS = ["RahpooCo"]
 
 NEXT_STATES = {
 	"normal_user_initial_state": 0
