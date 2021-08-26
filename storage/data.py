@@ -287,14 +287,23 @@ class RBTree:
 
 
 # Sorted link list Node
-class SortedLinkListNode(JSONEncoder):
+class SortedLinkListNode:
 	def __init__(self, data: LeaderBoardObj):
 		super(SortedLinkListNode, self).__init__()
 		self.data = data
 		self.next = None
 
+
+class SortedLinkListNodeEncoder(JSONEncoder):
 	def default(self, o):
-		return o.data.__dict__
+		return {
+			"owner_username": o.data.owner_username,
+			"media_link": o.data.media_link,
+			"media_file_id": o.data.media_file_id,
+			"media_file_path": o.data.media_file_path,
+			"score": o.data.score,
+			"migrate_to_persist_db": o.data.migrate_to_persist_db
+		}
 
 
 # Sorted Link List Data Structure

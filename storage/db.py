@@ -23,7 +23,7 @@ class PostgresDriver:
 		leader_board_json_file_path = os.path.join(os.getcwd(), 'leader_boards_backup',
 		                                           str(datetime.utcnow()).replace(" ", "_").replace(":", "-") + ".json")
 		with open(leader_board_json_file_path, mode='w') as backup_file:
-			json.dump(leader_board_list, backup_file)
+			json.dump(leader_board_list, backup_file, cls= SortedLinkListNodeEncoder)
 
 	def migrate_and_backup_user_states(self):
 		pass
@@ -116,11 +116,10 @@ if __name__ == '__main__':
 	obj3 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 18))
 	obj4 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 15))
 	obj5 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 19))
-	#print(LeaderBoardObj("hamidreza", "112", "ldk", "", 12).__dict__)
+	# print(obj1.data.__dict__)
 	leader_board.insert(obj1)
 	leader_board.insert(obj2)
 	leader_board.insert(obj3)
 	leader_board.insert(obj4)
 	leader_board.insert(obj5)
-	#print(obj1.__dict__)
 	PostgresDriver.backup_leader_board(leader_board)
