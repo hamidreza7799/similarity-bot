@@ -1,14 +1,27 @@
-from abc import ABC
+from abc import ABC, abstractmethod
+from typing import Iterable, Iterator
+from json import JSONEncoder, JSONDecoder
 
 
 class Data(ABC):
 	def __init__(self, owner_username, media_link, media_file_id, media_file_path, score, migrate_to_persist_db=False):
+		super(Data, self).__init__()
 		self.owner_username = owner_username
 		self.media_link = media_link
 		self.media_file_id = media_file_id
 		self.media_file_path = media_file_path
 		self.score = score
 		self.migrate_to_persist_db = migrate_to_persist_db
+
+	def json_serializer(self):
+		return {
+			"owner_username": self.owner_username,
+			"media_link": self.media_link,
+			"media_file_id": self.media_file_id,
+			"media_file_path": self.media_file_path,
+			"score": self.score,
+			"migrate_to_persist_db": self.migrate_to_persist_db
+		}
 
 
 class HasPotentialObj(Data):
@@ -50,7 +63,8 @@ class RBNode:
 
 
 # Red Black tree
-class RBTree:
+class RBTree(Iterable):
+
 	def __init__(self):
 		self.nil = RBNode(LeaderBoardObj("", "", "", "", False))
 		self.nil.red = False
@@ -59,11 +73,14 @@ class RBTree:
 		self.root = self.nil
 		self.length = 0
 
+	def __iter__(self) -> Iterator[RBNode]:
+		return iter(RBTree.pre_order(self.root, self.nil))
+
 	@staticmethod
 	def pre_order(current_node: RBNode, nil: RBNode):
 		if current_node is nil:
 			return []
-		return RBTree.pre_order(current_node.left, nil) + [current_node.data] + RBTree.pre_order(
+		return RBTree.pre_order(current_node.left, nil) + [current_node] + RBTree.pre_order(
 			current_node.right, nil)
 
 	def find_minimum_data(self):
@@ -284,15 +301,27 @@ class RBTree:
 		v.parent = u.parent
 
 
+class RBTreeNodeEncoder(JSONEncoder):
+	def default(self, o: RBNode):
+		return o.data.json_serializer()
+
+
 # Sorted link list Node
 class SortedLinkListNode:
 	def __init__(self, data: LeaderBoardObj):
+		super(SortedLinkListNode, self).__init__()
 		self.data = data
 		self.next = None
 
 
+class SortedLinkListNodeEncoder(JSONEncoder):
+	def default(self, o: SortedLinkListNode):
+		return o.data.json_serializer()
+
+
 # Sorted Link List Data Structure
-class SortedLinkedList:
+class SortedLinkedList(Iterable):
+
 	def __init__(self):
 		self.head = None
 
@@ -344,6 +373,14 @@ class SortedLinkedList:
 	def deletion_all(self):
 		self.head = None
 
+	def __iter__(self) -> Iterator[LeaderBoardObj]:
+		result = []
+		current = self.head
+		while current is not None:
+			result += [current]
+			current = current.next
+		return iter(result)
+
 	def __str__(self):
 		result = []
 		temp = self.head
@@ -381,18 +418,19 @@ if __name__ == "__main__":
 	# leader_board.deletion(obj2)
 	# print(RBTree.pre_order(leader_board.root, leader_board.nil))
 	leader_board = SortedLinkedList()
-	obj1 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", 12))
-	obj2 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", 13))
-	obj3 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", 18))
-	obj4 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", 15))
-	obj5 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", 19))
+	obj1 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 12))
+	obj2 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 13))
+	obj3 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 18))
+	obj4 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 15))
+	obj5 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 19))
 	leader_board.insert(obj1)
 	leader_board.insert(obj2)
 	leader_board.insert(obj3)
 	leader_board.insert(obj4)
 	leader_board.insert(obj5)
-	print(leader_board)
-	a = leader_board.pruning(5)
-	print(leader_board, a)
-	print(leader_board.get_item(2).data.score)
-	print(len(leader_board))
+	# print(leader_board)
+	# a = leader_board.pruning(5)
+	# print(leader_board, a)
+	# print(leader_board.get_item(2).data.score)
+	# print(len(leader_board))
+	print(list(leader_board))
