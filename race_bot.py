@@ -20,31 +20,31 @@ LOCK_RACE = False
 @app.on_message(filters.new_chat_members | filters.command(['start']))
 async def welcome(_, message: Message):
 	global LOCK_RACE
-	if message.chat.username in SUPERVISOR_USERS:
+	if message.chat.id in SUPERVISOR_USERS:
 		if LOCK_RACE:
-			USER_STATES[message.chat.username] = SupervisorLockState(message.chat.username, app)
+			USER_STATES[message.chat.id] = SupervisorLockState(message.chat.id, app)
 			await app.send_message(
 				message.chat.id,
 				"This is text in initial state for supervisor",
 				reply_markup=ReplyKeyboardRemove()
 			)
 		else:
-			USER_STATES[message.chat.username] = SupervisorInitialState(message.chat.username, app)
+			USER_STATES[message.chat.id] = SupervisorInitialState(message.chat.id, app)
 			await app.send_message(
 				message.chat.id,
 				"This is text in initial state for supervisor",
 				reply_markup=SUPERVISOR_INITIAL_KEYBOARD
 			)
-	elif message.chat.username == ADMIN_USER:
+	elif message.chat.id == ADMIN_USER:
 		if LOCK_RACE:
-			USER_STATES[message.chat.username] = AdminWaitForStartNewRace(message.chat.username, app)
+			USER_STATES[message.chat.id] = AdminWaitForStartNewRace(message.chat.id, app)
 			await app.send_message(
 				message.chat.id,
 				"This is initial text of admin",
 				reply_markup=ReplyKeyboardRemove()
 			)
 		else:
-			USER_STATES[message.chat.username] = AdminInitialState(message.chat.username, app)
+			USER_STATES[message.chat.id] = AdminInitialState(message.chat.id, app)
 			await app.send_message(
 				message.chat.id,
 				"This is initial of admin",
@@ -52,14 +52,14 @@ async def welcome(_, message: Message):
 			)
 	else:
 		if LOCK_RACE:
-			USER_STATES[message.chat.username] = NormalUserLockState(message.chat.username, app)
+			USER_STATES[message.chat.id] = NormalUserLockState(message.chat.id, app)
 			await app.send_message(
 				message.chat.id,
 				"This is initial for normal user",
 				reply_markup=ReplyKeyboardRemove()
 			)
 		else:
-			USER_STATES[message.chat.username] = NormalUserInitialState(message.chat.username, app)
+			USER_STATES[message.chat.id] = NormalUserInitialState(message.chat.id, app)
 			await app.send_message(
 				message.chat.id,
 				"This is initial for normal user",
@@ -70,10 +70,12 @@ async def welcome(_, message: Message):
 # Function for normal user and supervisor
 @app.on_message(filters.regex("عکس مسابقه") | filters.command(['race_image']))
 async def view_race_image(_, message: Message):
-	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
+	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	try:
 		if user_state is not None:
 			await user_state.view_race_photo()
+		else:
+			pass
 	except:
 		await user_state.default_function()
 
@@ -81,10 +83,12 @@ async def view_race_image(_, message: Message):
 # Function for normal user and supervisor and admin
 @app.on_message(filters.regex("مشاهده نتایج") | filters.command(['result']))
 async def view_result(_, message: Message):
-	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
+	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	try:
 		if user_state is not None:
 			await user_state.view_leader_board(leader_board_number=1)
+		else:
+			pass
 	except Exception as error:
 		await user_state.default_function()
 
@@ -93,10 +97,12 @@ async def view_result(_, message: Message):
 @app.on_callback_query(filters.regex('leader_board'))
 async def f(_, callback_query):
 	user_state = USER_STATES[
-		callback_query.from_user.username] if callback_query.from_user.username is not None else None
+		callback_query.from_user.id] if callback_query.from_user.id in USER_STATES else None
 	try:
 		if user_state is not None:
 			await user_state.view_leader_board(leader_board_number=int(callback_query.data.split("#")[1]))
+		else:
+			pass
 	except:
 		await user_state.default_function()
 
@@ -104,24 +110,25 @@ async def f(_, callback_query):
 # Function for normal user
 @app.on_message(filters.regex("ارسال عکس") | filters.command(['send_photo']))
 async def change_initial_state_to_sending_photo_state(_, message: Message):
-	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
+	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	if user_state is not None:
 		if isinstance(user_state, NormalUserInitialState):
 			user_state = user_state.next_state()
-			USER_STATES[message.chat.username] = user_state
+			USER_STATES[message.chat.id] = user_state
 		await user_state.default_function()
-
+	else:
+		pass
 
 # Function for normal user
 @app.on_message(filters.photo & ~photo_from_admin_user_filter)
 async def save_user_photo(_, message: Message):
-	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
+	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	try:
 		aipa_state = user_state.save_user_photo()
-		USER_STATES[message.chat.username] = aipa_state
+		USER_STATES[message.chat.id] = aipa_state
 		await aipa_state.work_with_aipa(message)
 		user_state = aipa_state.next_state()
-		USER_STATES[message.chat.username] = user_state
+		USER_STATES[message.chat.id] = user_state
 		await user_state.default_function()
 	except Exception as error:
 		await user_state.default_function()
@@ -130,24 +137,28 @@ async def save_user_photo(_, message: Message):
 # Function for supervisor
 @app.on_message(filters.regex("ارزیابی عکس‌ها") | filters.command(["evaluation"]))
 async def change_initial_state_to_evaluation_state_supervisor(_, message: Message):
-	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
+	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	if user_state is not None:
 		if isinstance(user_state, SupervisorInitialState):
 			user_state = await user_state.next_state()
-			USER_STATES[message.chat.username] = user_state
+			USER_STATES[message.chat.id] = user_state
 		await user_state.default_function()
+	else:
+		pass
 
 
 # Function for supervisor
 @app.on_message(filters.regex("تایید") | filters.command(["confirm"]))
 async def confirm_photo(_, message: Message):
-	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
+	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	try:
 		if user_state is not None:
 			await user_state.confirm_photo()
 			user_state = user_state.next_state()
-			USER_STATES[message.chat.username] = user_state
+			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
+		else:
+			pass
 	except:
 		await user_state.default_function()
 
@@ -155,13 +166,15 @@ async def confirm_photo(_, message: Message):
 # Function for supervisor
 @app.on_message(filters.regex("رد") | filters.command(["reject"]))
 async def confirm_photo(_, message: Message):
-	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
+	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	try:
 		if user_state is not None:
 			await user_state.reject_photo()
 			user_state = user_state.next_state()
-			USER_STATES[message.chat.username] = user_state
+			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
+		else:
+			pass
 	except:
 		await user_state.default_function()
 
@@ -170,14 +183,16 @@ async def confirm_photo(_, message: Message):
 @app.on_message(filters.regex("پایان مسابقه") | filters.command(['finish_race']))
 async def finish_race(_, message: Message):
 	global LOCK_RACE
-	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
+	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	try:
 		if user_state is not None:
 			LOCK_RACE = True
 			await user_state.finish_race(USER_STATES)
 			user_state = user_state.next_state()
-			USER_STATES[message.chat.username] = user_state
+			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
+		else:
+			pass
 	except Exception as exception:
 		LOCK_RACE = False
 		await user_state.default_function()
@@ -187,14 +202,16 @@ async def finish_race(_, message: Message):
 @app.on_message(filters.photo & photo_from_admin_user_filter)
 async def start_new_race(_, message: Message):
 	global LOCK_RACE
-	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
+	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	try:
 		if user_state is not None:
 			LOCK_RACE = False
 			await user_state.start_new_race(USER_STATES, message)
 			user_state = user_state.next_state()
-			USER_STATES[message.chat.username] = user_state
+			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
+		else:
+			pass
 	except Exception as error:
 		LOCK_RACE = True
 		await user_state.default_function()
@@ -202,9 +219,11 @@ async def start_new_race(_, message: Message):
 
 @app.on_message(filters.all)
 async def message_handler(_, message: Message):
-	user_state = USER_STATES[message.chat.username] if message.chat.username is not None else None
+	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	if user_state is not None:
 		await user_state.default_function()
+	else:
+		pass
 
 
 async def main():

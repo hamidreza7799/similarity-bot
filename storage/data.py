@@ -1,12 +1,13 @@
-from abc import ABC, abstractmethod
+from abc import ABC
+from json import JSONEncoder
 from typing import Iterable, Iterator
-from json import JSONEncoder, JSONDecoder
 
 
 class Data(ABC):
-	def __init__(self, owner_username, media_link, media_file_id, media_file_path, score, migrate_to_persist_db=False):
+	def __init__(self, owner_user_id: int, media_link: str, media_file_id: str, media_file_path: str, score: float,
+	             migrate_to_persist_db: bool = False):
 		super(Data, self).__init__()
-		self.owner_username = owner_username
+		self.owner_user_id = owner_user_id
 		self.media_link = media_link
 		self.media_file_id = media_file_id
 		self.media_file_path = media_file_path
@@ -15,7 +16,7 @@ class Data(ABC):
 
 	def json_serializer(self):
 		return {
-			"owner_username": self.owner_username,
+			"owner_user_id": self.owner_user_id,
 			"media_link": self.media_link,
 			"media_file_id": self.media_file_id,
 			"media_file_path": self.media_file_path,
@@ -25,28 +26,28 @@ class Data(ABC):
 
 
 class HasPotentialObj(Data):
-	def __init__(self, owner_username, media_link, media_file_id, media_file_path, score, migrate_to_persist_db=False):
-		super(HasPotentialObj, self).__init__(owner_username, media_link, media_file_id, media_file_path, score,
+	def __init__(self, owner_user_id, media_link, media_file_id, media_file_path, score, migrate_to_persist_db=False):
+		super(HasPotentialObj, self).__init__(owner_user_id, media_link, media_file_id, media_file_path, score,
 		                                      migrate_to_persist_db)
 
 	@staticmethod
 	def convert_to_leader_board_obj(potential_obj: Data):
 		return LeaderBoardObj(
-			potential_obj.owner_username, potential_obj.media_link, potential_obj.media_file_id,
+			potential_obj.owner_user_id, potential_obj.media_link, potential_obj.media_file_id,
 			potential_obj.media_file_path,
 			potential_obj.score
 		)
 
 
 class LeaderBoardObj(Data):
-	def __init__(self, owner_username, media_link, media_file_id, media_file_path, score, migrate_to_persist_db=False):
-		super(LeaderBoardObj, self).__init__(owner_username, media_link, media_file_id, media_file_path, score,
+	def __init__(self, owner_user_id, media_link, media_file_id, media_file_path, score, migrate_to_persist_db=False):
+		super(LeaderBoardObj, self).__init__(owner_user_id, media_link, media_file_id, media_file_path, score,
 		                                     migrate_to_persist_db)
 
 	@staticmethod
 	def convert_to_potential_obj(leader_board_obj: Data):
 		return HasPotentialObj(
-			leader_board_obj.owner_username, leader_board_obj.media_link, leader_board_obj.media_file_id,
+			leader_board_obj.owner_user_id, leader_board_obj.media_link, leader_board_obj.media_file_id,
 			leader_board_obj.media_file_path,
 			leader_board_obj.score
 		)
@@ -66,7 +67,7 @@ class RBNode:
 class RBTree(Iterable):
 
 	def __init__(self):
-		self.nil = RBNode(LeaderBoardObj("", "", "", "", False))
+		self.nil = RBNode(LeaderBoardObj(0, "", "", "", False))
 		self.nil.red = False
 		self.nil.left = None
 		self.nil.right = None
@@ -418,11 +419,11 @@ if __name__ == "__main__":
 	# leader_board.deletion(obj2)
 	# print(RBTree.pre_order(leader_board.root, leader_board.nil))
 	leader_board = SortedLinkedList()
-	obj1 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 12))
-	obj2 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 13))
-	obj3 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 18))
-	obj4 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 15))
-	obj5 = SortedLinkListNode(LeaderBoardObj("hamidreza", "112", "ldk", "", 19))
+	obj1 = SortedLinkListNode(LeaderBoardObj(1, "112", "ldk", "", 12))
+	obj2 = SortedLinkListNode(LeaderBoardObj(1, "112", "ldk", "", 13))
+	obj3 = SortedLinkListNode(LeaderBoardObj(1, "112", "ldk", "", 18))
+	obj4 = SortedLinkListNode(LeaderBoardObj(1, "112", "ldk", "", 15))
+	obj5 = SortedLinkListNode(LeaderBoardObj(1, "112", "ldk", "", 19))
 	leader_board.insert(obj1)
 	leader_board.insert(obj2)
 	leader_board.insert(obj3)
