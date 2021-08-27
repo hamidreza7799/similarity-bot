@@ -1,17 +1,12 @@
-from abc import ABC, abstractmethod
-from pyrogram.types import Message
-from pyrogram import Client
-from pyrogram.types import (InlineQueryResultArticle, InputTextMessageContent,
-                            InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove)
-from pyrogram.types import ReplyKeyboardMarkup, InlineKeyboardMarkup, InlineKeyboardButton
 from pykeyboard import InlineKeyboard
-from storage.data import *
-from race_config import NORMAL_USER_INITIAL_KEYBOARD, SUPERVISOR_INITIAL_KEYBOARD, ADMIN_INITIAL_KEYBOARD, NEXT_STATES, \
-	ADMIN_USER, SUPERVISOR_USERS
+from pyrogram import Client
+from pyrogram.types import Message
+from pyrogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
+
 from aipa.aipa import *
-import asyncio
-import os
-import json
+from race_config import NORMAL_USER_INITIAL_KEYBOARD, SUPERVISOR_INITIAL_KEYBOARD, ADMIN_INITIAL_KEYBOARD, ADMIN_USER, \
+	SUPERVISOR_USERS
+from storage.data import *
 
 AIPA_CLIENT = AipaRestClient()
 AIPA_CLIENT.get_valid_access_token()
@@ -143,6 +138,9 @@ class NormalUserSendingPhotoState(State):
 			reply_markup=ReplyKeyboardRemove()
 		)
 
+	def json_serializer(self):
+		return {"class_type": str(self.__class__)}
+
 
 class NormalUserWaitForAIPAResult(State):
 	def next_state(self):
@@ -247,7 +245,8 @@ class SupervisorInitialState(NormalUserInitialState):
 
 
 class SupervisorEvaluationState(State):
-	def __init__(self, username: str, client: Client, assigned_potential_obj: HasPotentialObj, potential_board_length: int):
+	def __init__(self, username: str, client: Client, assigned_potential_obj: HasPotentialObj,
+	             potential_board_length: int):
 		self.assigned_potential_obj = assigned_potential_obj
 		self.potential_board_length = potential_board_length
 		super(SupervisorEvaluationState, self).__init__(username, client)
