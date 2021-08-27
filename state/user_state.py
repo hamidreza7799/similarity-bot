@@ -1,11 +1,11 @@
 from pykeyboard import InlineKeyboard
 from pyrogram import Client
 from pyrogram.types import Message
-from pyrogram.types import ReplyKeyboardMarkup, ReplyKeyboardRemove
+from pyrogram.types import ReplyKeyboardRemove
 
 from aipa.aipa import *
 from race_config import NORMAL_USER_INITIAL_KEYBOARD, SUPERVISOR_INITIAL_KEYBOARD, ADMIN_INITIAL_KEYBOARD, ADMIN_USER, \
-	SUPERVISOR_USERS
+	SUPERVISOR_USERS, SUPERVISOR_EVALUATION_KEYBOARD
 from storage.data import *
 
 AIPA_CLIENT = AipaRestClient()
@@ -34,8 +34,16 @@ POTENTIAL_BOARD.insert(RBNode(HasPotentialObj("h_azarbad77", "https://t.me/c/-10
 
 class State(ABC):
 	def __init__(self, username: str, client: Client = None):
-		self.username = username
-		self.client = client
+		self.__username = username
+		self.__client = client
+
+	@property
+	def username(self):
+		return self.username
+
+	@property
+	def client(self):
+		return self.client
 
 	@abstractmethod
 	def next_state(self):
@@ -110,14 +118,7 @@ class NormalUserInitialState(State):
 		await self.client.send_message(
 			self.username,
 			"شما کارهای زیر می‌توانید انجام دهید...",
-			reply_markup=ReplyKeyboardMarkup(
-				[
-					["📣  " + "مشاهده نتایج "],  # First row
-					["📷  " + "مشاهده عکس مسابقه "],  # Second row
-					["⛳  " + "ارسال عکس "],  # Second row
-				],
-				resize_keyboard=True  # Make the keyboard smaller
-			)
+			reply_markup=NORMAL_USER_INITIAL_KEYBOARD
 		)
 
 	def json_serializer(self):
@@ -125,7 +126,7 @@ class NormalUserInitialState(State):
 
 
 class NormalUserSendingPhotoState(State):
-	def save_user_photo(self, message: Message):
+	def save_user_photo(self):
 		return NormalUserWaitForAIPAResult(self.username, self.client)
 
 	def next_state(self):
@@ -233,14 +234,7 @@ class SupervisorInitialState(NormalUserInitialState):
 		await self.client.send_message(
 			self.username,
 			"شما کارهای زیر می‌توانید انجام دهید...",
-			reply_markup=ReplyKeyboardMarkup(
-				[
-					["📣  " + "مشاهده نتایج "],  # First row
-					["📷  " + "مشاهده عکس مسابقه "],  # Second row
-					["⛳  " + "ارزیابی عکس‌ها  "],  # Second row
-				],
-				resize_keyboard=True  # Make the keyboard smaller
-			)
+			reply_markup=SUPERVISOR_INITIAL_KEYBOARD
 		)
 
 
@@ -259,13 +253,7 @@ class SupervisorEvaluationState(State):
 			self.username,
 			self.assigned_potential_obj.media_file_id,
 			f'عکسی که باید ارزیابی کنید. تعداد {self.potential_board_length} باقی است...',
-			reply_markup=ReplyKeyboardMarkup(
-				[
-					["📣  " + " تایید"],  # First row
-					["📷  " + "رد "],  # Second row
-				],
-				resize_keyboard=True  # Make the keyboard smaller
-			)
+			reply_markup=SUPERVISOR_EVALUATION_KEYBOARD
 		)
 
 	async def confirm_photo(self):
@@ -301,14 +289,7 @@ class AdminInitialState(NormalUserInitialState):
 		await self.client.send_message(
 			self.username,
 			"اگر می‌خواهید مسابقه جدیدی را شروع کنید، ابتدا مسابقه قبلی را خاتمه دهید...",
-			reply_markup=ReplyKeyboardMarkup(
-				[
-					["📣  " + "مشاهده نتایج "],  # First row
-					["📷  " + "مشاهده عکس مسابقه "],  # Second row
-					["⛳  " + "پایان مسابقه  "],  # Second row
-				],
-				resize_keyboard=True  # Make the keyboard smaller
-			)
+			reply_markup=ADMIN_INITIAL_KEYBOARD
 		)
 
 	async def finish_race(self, user_states: {}):

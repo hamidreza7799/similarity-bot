@@ -28,6 +28,14 @@ SUPERVISOR_INITIAL_KEYBOARD = ReplyKeyboardMarkup(
 	],
 	resize_keyboard=True  # Make the keyboard smaller
 )
+
+SUPERVISOR_EVALUATION_KEYBOARD = ReplyKeyboardMarkup(
+	[
+		["📣  " + " تایید"],  # First row
+		["📷  " + "رد "],  # Second row
+	],
+	resize_keyboard=True  # Make the keyboard smaller
+)
 NORMAL_USER_INITIAL_KEYBOARD = ReplyKeyboardMarkup(
 	[
 		["📣  " + "مشاهده نتایج "],  # First row
