@@ -14,7 +14,7 @@ import asyncio
 
 USER_STATES = {}
 app = Client('config/my_bot', bot_token=bot_token, api_hash=api_hash, api_id=api_id)
-LOCK_RACE = False
+LOCK_RACE = True
 
 
 @app.on_message(filters.new_chat_members | filters.command(['start']))
@@ -75,7 +75,7 @@ async def view_race_image(_, message: Message):
 		if user_state is not None:
 			await user_state.view_race_photo()
 		else:
-			pass
+			await welcome(_, message)
 	except:
 		await user_state.default_function()
 
@@ -88,7 +88,7 @@ async def view_result(_, message: Message):
 		if user_state is not None:
 			await user_state.view_leader_board(leader_board_number=1)
 		else:
-			pass
+			await welcome(_, message)
 	except Exception as error:
 		await user_state.default_function()
 
@@ -102,7 +102,7 @@ async def f(_, callback_query):
 		if user_state is not None:
 			await user_state.view_leader_board(leader_board_number=int(callback_query.data.split("#")[1]))
 		else:
-			pass
+			await welcome(_, callback_query.message)
 	except:
 		await user_state.default_function()
 
@@ -117,7 +117,8 @@ async def change_initial_state_to_sending_photo_state(_, message: Message):
 			USER_STATES[message.chat.id] = user_state
 		await user_state.default_function()
 	else:
-		pass
+		await welcome(_, message)
+
 
 # Function for normal user
 @app.on_message(filters.photo & ~photo_from_admin_user_filter)
@@ -144,7 +145,7 @@ async def change_initial_state_to_evaluation_state_supervisor(_, message: Messag
 			USER_STATES[message.chat.id] = user_state
 		await user_state.default_function()
 	else:
-		pass
+		await welcome(_, message)
 
 
 # Function for supervisor
@@ -158,7 +159,7 @@ async def confirm_photo(_, message: Message):
 			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
 		else:
-			pass
+			await welcome(_, message)
 	except:
 		await user_state.default_function()
 
@@ -174,7 +175,7 @@ async def confirm_photo(_, message: Message):
 			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
 		else:
-			pass
+			await welcome(_, message)
 	except:
 		await user_state.default_function()
 
@@ -192,7 +193,7 @@ async def finish_race(_, message: Message):
 			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
 		else:
-			pass
+			await welcome(_, message)
 	except Exception as exception:
 		LOCK_RACE = False
 		await user_state.default_function()
@@ -211,7 +212,7 @@ async def start_new_race(_, message: Message):
 			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
 		else:
-			pass
+			await welcome(_, message)
 	except Exception as error:
 		LOCK_RACE = True
 		await user_state.default_function()
@@ -223,7 +224,7 @@ async def message_handler(_, message: Message):
 	if user_state is not None:
 		await user_state.default_function()
 	else:
-		pass
+		await welcome(_, message)
 
 
 async def main():
