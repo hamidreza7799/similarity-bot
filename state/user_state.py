@@ -5,7 +5,7 @@ from pyrogram.types import ReplyKeyboardRemove
 from abc import abstractmethod
 from aipa.aipa import *
 from race_config import NORMAL_USER_INITIAL_KEYBOARD, SUPERVISOR_INITIAL_KEYBOARD, ADMIN_INITIAL_KEYBOARD, ADMIN_USER, \
-	SUPERVISOR_USERS, SUPERVISOR_EVALUATION_KEYBOARD
+	SUPERVISOR_USERS, SUPERVISOR_EVALUATION_KEYBOARD, NORMAL_USER_SENDING_PHOTO_KEYBOARD
 from storage.data import *
 
 AIPA_CLIENT = AipaRestClient()
@@ -30,6 +30,10 @@ POTENTIAL_BOARD.insert(RBNode(HasPotentialObj(3, "https://t.me/c/-1000088202234/
                                               'AgACAgQAAxkBAAIBJ2Eg5rzBSUoOKTbqFgwICUUjiMxCAAIBtTEbJuYIUUo-xujHC2C7ZBZJLl0AAwEAAwIAA3gAA7s-BQABHgQ',
                                               "C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\user_images\\ronaldo\\race_image.jpg",
                                               24)))
+POTENTIAL_BOARD.insert(RBNode(HasPotentialObj(4, "https://t.me/c/-1000088202234/295",
+                                              'AgACAgQAAxkBAAIBJ2Eg5rzBSUoOKTbqFgwICUUjiMxCAAIBtTEbJuYIUUo-xujHC2C7ZBZJLl0AAwEAAwIAA3gAA7s-BQABHgQ',
+                                              "C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\user_images\\ronaldo\\race_image.jpg",
+                                              24)))
 
 
 class State(ABC):
@@ -43,7 +47,7 @@ class State(ABC):
 
 	@property
 	def client(self):
-		return self.client
+		return self.__client
 
 	@abstractmethod
 	def next_state(self):
@@ -51,6 +55,10 @@ class State(ABC):
 
 	@abstractmethod
 	async def default_function(self):
+		pass
+
+	@abstractmethod
+	def back_state(self):
 		pass
 
 	@abstractmethod
@@ -74,6 +82,9 @@ class NormalUserLockState(State):
 			"هنوز مسابقه جدیدی شروع نشده‌است...",
 			reply_markup=ReplyKeyboardRemove()
 		)
+
+	def back_state(self):
+		return self
 
 	def json_serializer(self):
 		return {"class_type": self.__class__}
@@ -121,6 +132,9 @@ class NormalUserInitialState(State):
 			reply_markup=NORMAL_USER_INITIAL_KEYBOARD
 		)
 
+	def back_state(self):
+		return self
+
 	def json_serializer(self):
 		return {"class_type": str(self.__class__)}
 
@@ -136,8 +150,11 @@ class NormalUserSendingPhotoState(State):
 		await self.client.send_message(
 			self.user_id,
 			"لطفا عکس مورد نظر خود را ارسال کنید...",
-			reply_markup=ReplyKeyboardRemove()
+			reply_markup=NORMAL_USER_SENDING_PHOTO_KEYBOARD
 		)
+
+	def back_state(self):
+		return NormalUserInitialState(self.user_id, self.client)
 
 	def json_serializer(self):
 		return {"class_type": str(self.__class__)}
@@ -146,6 +163,9 @@ class NormalUserSendingPhotoState(State):
 class NormalUserWaitForAIPAResult(State):
 	def next_state(self):
 		return NormalUserInitialState(self.user_id, self.client)
+
+	def back_state(self):
+		return self
 
 	async def work_with_aipa(self, message: Message):
 		user_image_file_path = os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
@@ -207,6 +227,9 @@ class SupervisorLockState(State):
 	def next_state(self):
 		return SupervisorInitialState(self.user_id, self.client)
 
+	def back_state(self):
+		return self
+
 	async def default_function(self):
 		await self.client.send_message(
 			self.user_id,
@@ -231,6 +254,9 @@ class SupervisorInitialState(NormalUserInitialState):
 			)
 			return self
 
+	def back_state(self):
+		return self
+
 	async def default_function(self):
 		await self.client.send_message(
 			self.user_id,
@@ -246,7 +272,20 @@ class SupervisorEvaluationState(State):
 		self.potential_board_length = potential_board_length
 		super(SupervisorEvaluationState, self).__init__(user_id, client)
 
-	def next_state(self):
+	async def next_state(self):
+		potential_photo = POTENTIAL_BOARD.find_minimum_data()
+		if potential_photo is not None:
+			POTENTIAL_BOARD.deletion(potential_photo)
+			return SupervisorEvaluationState(self.user_id, self.client, potential_photo.data, POTENTIAL_BOARD.length)
+		else:
+			await self.client.send_message(
+				self.user_id,
+				"عکسی در حال حاضر موجود نیست..."
+			)
+			return SupervisorInitialState(self.user_id, self.client)
+
+	def back_state(self):
+		POTENTIAL_BOARD.insert(RBNode(self.assigned_potential_obj))
 		return SupervisorInitialState(self.user_id, self.client)
 
 	async def default_function(self):
@@ -285,6 +324,9 @@ class SupervisorEvaluationState(State):
 class AdminInitialState(NormalUserInitialState):
 	def next_state(self):
 		return AdminWaitForStartNewRace(self.user_id, self.client)
+
+	def back_state(self):
+		return self
 
 	async def default_function(self):
 		await self.client.send_message(
@@ -362,6 +404,9 @@ class AdminInitialState(NormalUserInitialState):
 class AdminWaitForStartNewRace(State):
 	def next_state(self):
 		return AdminInitialState(self.user_id, self.client)
+
+	def back_state(self):
+		return self
 
 	async def default_function(self):
 		await self.client.send_message(

@@ -14,7 +14,7 @@ import asyncio
 
 USER_STATES = {}
 app = Client('config/my_bot', bot_token=bot_token, api_hash=api_hash, api_id=api_id)
-LOCK_RACE = True
+LOCK_RACE = False
 
 
 @app.on_message(filters.new_chat_members | filters.command(['start']))
@@ -67,7 +67,21 @@ async def welcome(_, message: Message):
 			)
 
 
-# Function for normal user and supervisor
+# Function for normal user and supervisor and admin
+@app.on_message(filters.regex("بازگشت") | filters.command(['back']))
+async def back_current_user_state(_, message: Message):
+	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
+	try:
+		if user_state is not None:
+			USER_STATES[message.chat.id] = user_state.back_state()
+			await USER_STATES[message.chat.id].default_function()
+		else:
+			await welcome(_, message)
+	except:
+		await user_state.default_function()
+
+
+# Function for normal user and supervisor and admin
 @app.on_message(filters.regex("عکس مسابقه") | filters.command(['race_image']))
 async def view_race_image(_, message: Message):
 	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
@@ -155,7 +169,7 @@ async def confirm_photo(_, message: Message):
 	try:
 		if user_state is not None:
 			await user_state.confirm_photo()
-			user_state = user_state.next_state()
+			user_state = await user_state.next_state()
 			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
 		else:
@@ -171,7 +185,7 @@ async def confirm_photo(_, message: Message):
 	try:
 		if user_state is not None:
 			await user_state.reject_photo()
-			user_state = user_state.next_state()
+			user_state = await user_state.next_state()
 			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
 		else:

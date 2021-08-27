@@ -5,7 +5,7 @@ from pyrogram import filters
 from pyrogram.types import ReplyKeyboardMarkup
 
 ADMIN_USER = 'MajidSZ'
-SUPERVISOR_USERS = ["RahpooCo"]
+SUPERVISOR_USERS = [88202234,]
 
 NEXT_STATES = {
 	"normal_user_initial_state": 0
@@ -33,6 +33,7 @@ SUPERVISOR_EVALUATION_KEYBOARD = ReplyKeyboardMarkup(
 	[
 		["📣  " + " تایید"],  # First row
 		["📷  " + "رد "],  # Second row
+		["◀  " + "بازگشت "]
 	],
 	resize_keyboard=True  # Make the keyboard smaller
 )
@@ -44,7 +45,12 @@ NORMAL_USER_INITIAL_KEYBOARD = ReplyKeyboardMarkup(
 	],
 	resize_keyboard=True  # Make the keyboard smaller
 )
-
+NORMAL_USER_SENDING_PHOTO_KEYBOARD = ReplyKeyboardMarkup(
+	[
+		["◀  " + "بازگشت "]
+	],
+	resize_keyboard=True
+)
 photo_from_admin_user_filter = filters.create(lambda _, __, query: query.from_user.username == ADMIN_USER)
 
 config = ConfigParser()
