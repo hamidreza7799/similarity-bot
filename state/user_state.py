@@ -131,7 +131,7 @@ class NormalUserInitialState(State):
 
 class NormalUserSendingPhotoState(State):
 	async def save_user_photo(self, message: Message):
-		user_image_file_path = os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
+		user_image_file_path = os.path.join(os.getcwd(), "user_images",
 		                                    RACE_PHOTO_FILE, f'{message.chat.username}.jpg')
 		await message.download(
 			file_name=user_image_file_path
@@ -150,11 +150,10 @@ class NormalUserSendingPhotoState(State):
 
 	async def __check_similarity(self, message: Message, user_image_file_path: str):
 		aipa_response = await AIPA_CLIENT.post_face_verification(user_image_file_path,
-		                                                         os.path.join(
-			                                                         os.path.normpath(os.getcwd() + os.sep + os.pardir),
-			                                                         "user_images",
-			                                                         RACE_PHOTO_FILE,
-			                                                         "race_image.jpg"))
+		                                                         os.path.join(os.getcwd(),
+		                                                                      "user_images",
+		                                                                      RACE_PHOTO_FILE,
+		                                                                      "race_image.jpg"))
 
 		if not str(aipa_response.status_code).startswith('2'):
 			await self.client.send_message(
@@ -389,11 +388,11 @@ class AdminWaitForStartNewRace(State):
 		RACE_PHOTO_MEDIA_FILE_ID = message.photo.file_id
 		RACE_PHOTO_MEDIA_LINK = message.link
 		RACE_PHOTO_FILE = str(datetime.utcnow()).split('.')[0].replace(" ", "_").replace(":", "-")
-		if not os.path.exists(os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
+		if not os.path.exists(os.path.join(os.getcwd(), "user_images",
 		                                   RACE_PHOTO_FILE)):
-			os.mkdir(os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
+			os.mkdir(os.path.join(os.getcwd(), "user_images",
 			                      RACE_PHOTO_FILE))
-		race_image_file_path = os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
+		race_image_file_path = os.path.join(os.getcwd(), "user_images",
 		                                    RACE_PHOTO_FILE, f'race_image.jpg')
 		loop = asyncio.get_event_loop()
 		loop.create_task(message.download(file_name=race_image_file_path))
