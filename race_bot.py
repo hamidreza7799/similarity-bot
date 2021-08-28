@@ -7,7 +7,6 @@ from state.user_state import *
 from storage.backup import BackupDriver
 from race_config import ADMIN_USER, SUPERVISOR_USERS, photo_from_admin_user_filter, api_id, api_hash, bot_token, \
 	SUPERVISOR_INITIAL_KEYBOARD, ADMIN_INITIAL_KEYBOARD, NORMAL_USER_INITIAL_KEYBOARD, BACKUP_MINUTES
-import schedule
 import tgcrypto
 import asyncio
 import threading
