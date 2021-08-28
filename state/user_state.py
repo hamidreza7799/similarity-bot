@@ -5,8 +5,9 @@ from pyrogram.types import ReplyKeyboardRemove
 from abc import abstractmethod
 from aipa.aipa import *
 from race_config import NORMAL_USER_INITIAL_KEYBOARD, SUPERVISOR_INITIAL_KEYBOARD, ADMIN_INITIAL_KEYBOARD, ADMIN_USER, \
-	SUPERVISOR_USERS, SUPERVISOR_EVALUATION_KEYBOARD, NORMAL_USER_SENDING_PHOTO_KEYBOARD
+	SUPERVISOR_USERS, SUPERVISOR_EVALUATION_KEYBOARD, NORMAL_USER_SENDING_PHOTO_KEYBOARD, BACKUP_MINUTES
 from storage.data import *
+import threading
 
 AIPA_CLIENT = AipaRestClient()
 AIPA_CLIENT.get_valid_access_token()
@@ -64,11 +65,6 @@ class State(ABC):
 	@abstractmethod
 	def json_serializer(self):
 		pass
-
-
-class StateJsonEncoder(JSONEncoder):
-	def default(self, o: State):
-		return o.json_serializer()
 
 
 # Normal user states
@@ -393,9 +389,10 @@ class AdminInitialState(NormalUserInitialState):
 		LEADER_BOARD.deletion_all()
 
 	def __clean_race_information(self):
-		global RACE_PHOTO_MEDIA_FILE_ID, RACE_PHOTO_MEDIA_LINK
+		global RACE_PHOTO_MEDIA_FILE_ID, RACE_PHOTO_MEDIA_LINK, RACE_PHOTO_FILE
 		RACE_PHOTO_MEDIA_FILE_ID = None
 		RACE_PHOTO_MEDIA_LINK = None
+		RACE_PHOTO_FILE = None
 
 	def __save_user_id_in_db(self):
 		pass
@@ -473,3 +470,27 @@ class AdminWaitForStartNewRace(State):
 
 	def json_serializer(self):
 		return {"class_type": str(self.__class__)}
+
+
+from storage.backup import BackupDriver
+
+
+def backup_potential_board():
+	global RACE_PHOTO_FILE
+	if RACE_PHOTO_FILE is not None:
+		potential_board_json_file_path = os.path.join(os.getcwd(), 'backup', "potential_boards",
+		                                              RACE_PHOTO_FILE + ".json")
+		BackupDriver.backup_potential_board(potential_board_json_file_path, POTENTIAL_BOARD)
+	threading.Timer(BACKUP_MINUTES * 60, backup_potential_board).start()
+
+
+def backup_leader_board():
+	global RACE_PHOTO_FILE
+	if RACE_PHOTO_FILE is not None:
+		leader_board_json_file_path = os.path.join(os.getcwd(), 'backup', "leader_boards", RACE_PHOTO_FILE + ".json")
+		BackupDriver.backup_leader_board(leader_board_json_file_path, LEADER_BOARD)
+	threading.Timer(BACKUP_MINUTES * 60, backup_leader_board).start()
+
+
+threading.Timer(BACKUP_MINUTES * 60, backup_potential_board).start()
+threading.Timer(BACKUP_MINUTES * 60, backup_leader_board).start()

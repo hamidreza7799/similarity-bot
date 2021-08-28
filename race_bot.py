@@ -7,10 +7,10 @@ from state.user_state import *
 from storage.backup import BackupDriver
 from race_config import ADMIN_USER, SUPERVISOR_USERS, photo_from_admin_user_filter, api_id, api_hash, bot_token, \
 	SUPERVISOR_INITIAL_KEYBOARD, ADMIN_INITIAL_KEYBOARD, NORMAL_USER_INITIAL_KEYBOARD, BACKUP_MINUTES
-from multiprocessing import Process
 import schedule
 import tgcrypto
 import asyncio
+import threading
 
 USER_STATES = {}
 app = Client('config/my_bot', bot_token=bot_token, api_hash=api_hash, api_id=api_id)
@@ -247,14 +247,11 @@ async def main():
 
 
 def backup_user_states():
-	print(os.getcwd())
 	user_states_json_file_path = os.path.join(os.getcwd(), 'backup', "user_states.json")
-	backup_user_states_process = Process(target=BackupDriver.backup_user_states,
-	                                     args=(user_states_json_file_path, USER_STATES,))
-	backup_user_states_process.start()
+	BackupDriver.backup_user_states(user_states_json_file_path, USER_STATES.copy())
+	threading.Timer(BACKUP_MINUTES * 60, backup_user_states).start()
 
 
 if __name__ == "__main__":
-	# schedule.every(3).minutes.do(backup_user_states)
-	# threading.Timer(10, backup_user_states).start()
+	threading.Timer(BACKUP_MINUTES * 60, backup_user_states).start()
 	app.run(main())

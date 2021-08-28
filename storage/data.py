@@ -77,6 +77,11 @@ class RBTree(Iterable):
 	def __iter__(self) -> Iterator[RBNode]:
 		return iter(RBTree.pre_order(self.root, self.nil))
 
+	def copy(self):
+		copy_tree = RBTree()
+		copy_tree.root = RBNode(self.root.data)
+		return copy_tree
+
 	@staticmethod
 	def pre_order(current_node: RBNode, nil: RBNode):
 		if current_node is nil:
@@ -302,11 +307,6 @@ class RBTree(Iterable):
 		v.parent = u.parent
 
 
-class RBTreeNodeEncoder(JSONEncoder):
-	def default(self, o: RBNode):
-		return o.data.json_serializer()
-
-
 # Sorted link list Node
 class SortedLinkListNode:
 	def __init__(self, data: LeaderBoardObj):
@@ -315,16 +315,16 @@ class SortedLinkListNode:
 		self.next = None
 
 
-class SortedLinkListNodeEncoder(JSONEncoder):
-	def default(self, o: SortedLinkListNode):
-		return o.data.json_serializer()
-
-
 # Sorted Link List Data Structure
 class SortedLinkedList(Iterable):
 
 	def __init__(self):
 		self.head = None
+
+	def copy(self):
+		copy_link_list = SortedLinkedList()
+		copy_link_list.head = SortedLinkListNode(self.head.data)
+		return copy_link_list
 
 	def insert(self, new_node: SortedLinkListNode):
 		if self.head is None:
