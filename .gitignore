@@ -6,7 +6,4 @@ user_images
 *.session
 config
 backup/*
-storage/leader_boards_backup
-storage/user_states.json
-storage/potential_boards_backup
 *.tsv

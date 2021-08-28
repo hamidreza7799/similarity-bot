@@ -1,3 +1,4 @@
+from datetime import datetime
 from pykeyboard import InlineKeyboard
 from pyrogram import Client
 from pyrogram.types import Message
@@ -13,7 +14,7 @@ AIPA_CLIENT = AipaRestClient()
 AIPA_CLIENT.get_valid_access_token()
 RACE_PHOTO_MEDIA_LINK = "https://t.me/c/-1000925175130/252"
 RACE_PHOTO_MEDIA_FILE_ID = "AgACAgQAAxkBAAP8YSDEOnTz3YlFV0BrkEi-4ponqG8AAva1MRvPXAhR8geW3vrqkFddxrUvXQADAQADAgADeQAD88wCAAEeBA"
-RACE_PHOTO_FILE = "Ronaldo"
+RACE_PHOTO_FILE = "ronaldo"
 LEADER_BOARD_MAX_LENGTH = 10
 MINIMUM_SCORE_IN_LEADER_BOARD = -1
 LEADER_BOARD = SortedLinkedList()
@@ -164,19 +165,26 @@ class NormalUserWaitForAIPAResult(State):
 		return self
 
 	async def work_with_aipa(self, message: Message):
-		user_image_file_path = os.path.join(os.path.normpath(os.getcwd() + os.sep + os.pardir), "user_images",
-		                                    RACE_PHOTO_FILE,
-		                                    f'{message.chat.username if message.chat.username is not None else str(message.chat.id)}.jpg')
-		await message.download(
-			file_name=user_image_file_path
-		)
-		await self.default_function()
-		await self.__check_similarity(message, user_image_file_path)
+		try:
+			user_image_file_path = os.path.join(os.getcwd(), "user_images",
+			                                    RACE_PHOTO_FILE,
+			                                    f'{message.chat.username if message.chat.username is not None else str(message.chat.id)}.jpg')
+			await message.download(
+				file_name=user_image_file_path
+			)
+			await self.default_function()
+			await self.__check_similarity(message, user_image_file_path)
+		except Exception as error:
+			await self.client.send_message(
+				self.user_id,
+				"مشکلی از سمت مدل پیش آمده..."
+			)
 
 	async def default_function(self):
 		await self.client.send_message(
 			self.user_id,
-			'مدل در حال بررسی میزان شباهت می‌باشد. منتظر باشید...'
+			'مدل در حال بررسی میزان شباهت می‌باشد. منتظر باشید...',
+			reply_markup=ReplyKeyboardRemove()
 		)
 
 	async def __check_similarity(self, message: Message, user_image_file_path: str):
@@ -425,7 +433,7 @@ class AdminWaitForStartNewRace(State):
 
 	def __set_race_information(self, message: Message):
 		global MINIMUM_SCORE_IN_LEADER_BOARD, RACE_PHOTO_MEDIA_FILE_ID, RACE_PHOTO_MEDIA_LINK, RACE_PHOTO_FILE
-		MINIMUM_SCORE_IN_LEADER_BOARD = -1
+		MINIMUM_SCORE_IN_LEADER_BOARD = 0.4
 		RACE_PHOTO_MEDIA_FILE_ID = message.photo.file_id
 		RACE_PHOTO_MEDIA_LINK = message.link
 		RACE_PHOTO_FILE = str(datetime.utcnow()).split('.')[0].replace(" ", "_").replace(":", "-")

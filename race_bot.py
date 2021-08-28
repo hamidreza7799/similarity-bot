@@ -7,14 +7,13 @@ from state.user_state import *
 from storage.backup import BackupDriver
 from race_config import ADMIN_USER, SUPERVISOR_USERS, photo_from_admin_user_filter, api_id, api_hash, bot_token, \
 	SUPERVISOR_INITIAL_KEYBOARD, ADMIN_INITIAL_KEYBOARD, NORMAL_USER_INITIAL_KEYBOARD, BACKUP_MINUTES
-import schedule
 import tgcrypto
 import asyncio
 import threading
 
 USER_STATES = {}
 app = Client('config/my_bot', bot_token=bot_token, api_hash=api_hash, api_id=api_id)
-LOCK_RACE = False
+LOCK_RACE = True
 
 
 @app.on_message(filters.new_chat_members | filters.command(['start']))
