@@ -12,16 +12,22 @@ import asyncio
 import threading
 
 USER_STATES = {}
+USER_STATES_THREADING_LOCK = threading.Lock()
 app = Client('config/my_bot', bot_token=bot_token, api_hash=api_hash, api_id=api_id)
 LOCK_RACE = True
+LOCK_RACE_THREADING_LOCK = threading.Lock()
 
 
 @app.on_message(filters.new_chat_members | filters.command(['start']))
 async def welcome(_, message: Message):
 	global LOCK_RACE
+	LOCK_RACE_THREADING_LOCK.acquire()
+	USER_STATES_THREADING_LOCK.acquire()
 	if message.chat.id in SUPERVISOR_USERS:
 		if LOCK_RACE:
 			USER_STATES[message.chat.id] = SupervisorLockState(message.chat.id, app)
+			LOCK_RACE_THREADING_LOCK.release()
+			USER_STATES_THREADING_LOCK.release()
 			await app.send_message(
 				message.chat.id,
 				"This is text in initial state for supervisor",
@@ -29,6 +35,8 @@ async def welcome(_, message: Message):
 			)
 		else:
 			USER_STATES[message.chat.id] = SupervisorInitialState(message.chat.id, app)
+			LOCK_RACE_THREADING_LOCK.release()
+			USER_STATES_THREADING_LOCK.release()
 			await app.send_message(
 				message.chat.id,
 				"This is text in initial state for supervisor",
@@ -37,6 +45,8 @@ async def welcome(_, message: Message):
 	elif message.chat.id == ADMIN_USER:
 		if LOCK_RACE:
 			USER_STATES[message.chat.id] = AdminWaitForStartNewRace(message.chat.id, app)
+			LOCK_RACE_THREADING_LOCK.release()
+			USER_STATES_THREADING_LOCK.release()
 			await app.send_message(
 				message.chat.id,
 				"This is initial text of admin",
@@ -44,6 +54,8 @@ async def welcome(_, message: Message):
 			)
 		else:
 			USER_STATES[message.chat.id] = AdminInitialState(message.chat.id, app)
+			LOCK_RACE_THREADING_LOCK.release()
+			USER_STATES_THREADING_LOCK.release()
 			await app.send_message(
 				message.chat.id,
 				"This is initial of admin",
@@ -52,6 +64,8 @@ async def welcome(_, message: Message):
 	else:
 		if LOCK_RACE:
 			USER_STATES[message.chat.id] = NormalUserLockState(message.chat.id, app)
+			LOCK_RACE_THREADING_LOCK.release()
+			USER_STATES_THREADING_LOCK.release()
 			await app.send_message(
 				message.chat.id,
 				"This is initial for normal user",
@@ -59,6 +73,8 @@ async def welcome(_, message: Message):
 			)
 		else:
 			USER_STATES[message.chat.id] = NormalUserInitialState(message.chat.id, app)
+			LOCK_RACE_THREADING_LOCK.release()
+			USER_STATES_THREADING_LOCK.release()
 			await app.send_message(
 				message.chat.id,
 				"This is initial for normal user",
