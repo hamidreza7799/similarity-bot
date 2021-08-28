@@ -4,8 +4,8 @@ import os
 from pyrogram import filters
 from pyrogram.types import ReplyKeyboardMarkup
 
-ADMIN_USER = 'MajidSZ'
-SUPERVISOR_USERS = [88202234,]
+ADMIN_USER = 88202234
+SUPERVISOR_USERS = []
 
 NEXT_STATES = {
 	"normal_user_initial_state": 0
@@ -51,7 +51,7 @@ NORMAL_USER_SENDING_PHOTO_KEYBOARD = ReplyKeyboardMarkup(
 	],
 	resize_keyboard=True
 )
-photo_from_admin_user_filter = filters.create(lambda _, __, query: query.from_user.username == ADMIN_USER)
+photo_from_admin_user_filter = filters.create(lambda _, __, query: query.from_user.id == ADMIN_USER)
 
 config = ConfigParser()
 config_path = os.path.join(os.getcwd(), 'config', 'bot_config.ini')

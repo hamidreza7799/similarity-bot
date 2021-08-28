@@ -13,7 +13,7 @@ import threading
 
 USER_STATES = {}
 app = Client('config/my_bot', bot_token=bot_token, api_hash=api_hash, api_id=api_id)
-LOCK_RACE = False
+LOCK_RACE = True
 
 
 @app.on_message(filters.new_chat_members | filters.command(['start']))
