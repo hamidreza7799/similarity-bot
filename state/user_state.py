@@ -1,7 +1,7 @@
 from datetime import datetime
 from pykeyboard import InlineKeyboard
 from pyrogram import Client
-from pyrogram.types import Message
+from pyrogram.types import Message, ReplyKeyboardMarkup
 from pyrogram.types import ReplyKeyboardRemove
 from abc import abstractmethod
 from aipa.aipa import *
@@ -40,8 +40,13 @@ POTENTIAL_BOARD.insert(RBNode(HasPotentialObj(4, "https://t.me/c/-1000088202234/
 
 class State(ABC):
 	def __init__(self, user_id: int, client: Client = None):
+		self.__lock = asyncio.Lock()
 		self.__user_id = user_id
 		self.__client = client
+
+	@property
+	def lock(self):
+		return self.__lock
 
 	@property
 	def user_id(self):
@@ -131,6 +136,9 @@ class NormalUserInitialState(State):
 
 	def back_state(self):
 		return self
+
+	def change_to_sending_photo_state(self) -> State:
+		return self.next_state()
 
 	def json_serializer(self):
 		return {"class_type": str(self.__class__)}
@@ -246,20 +254,19 @@ class SupervisorLockState(State):
 
 
 class SupervisorInitialState(NormalUserInitialState):
-	async def next_state(self):
+	def next_state(self):
 		potential_photo = POTENTIAL_BOARD.find_minimum_data()
-		if potential_photo is not None:
+		if potential_photo is None:
+			return SupervisorEvaluationState(self.user_id, self.client)
+		else:
 			POTENTIAL_BOARD.deletion(potential_photo)
 			return SupervisorEvaluationState(self.user_id, self.client, potential_photo.data, POTENTIAL_BOARD.length)
-		else:
-			await self.client.send_message(
-				self.user_id,
-				"عکسی در حال حاضر موجود نیست..."
-			)
-			return self
 
 	def back_state(self):
 		return self
+
+	def change_to_evaluation_state(self) -> State:
+		return self.next_state()
 
 	async def default_function(self):
 		await self.client.send_message(
@@ -270,55 +277,56 @@ class SupervisorInitialState(NormalUserInitialState):
 
 
 class SupervisorEvaluationState(State):
-	def __init__(self, user_id: int, client: Client, assigned_potential_obj: HasPotentialObj,
-	             potential_board_length: int):
+	def __init__(self, user_id: int, client: Client, assigned_potential_obj: HasPotentialObj = None,
+	             potential_board_length: int = 0):
 		self.assigned_potential_obj = assigned_potential_obj
 		self.potential_board_length = potential_board_length
 		super(SupervisorEvaluationState, self).__init__(user_id, client)
 
-	async def next_state(self):
+	def next_state(self):
 		potential_photo = POTENTIAL_BOARD.find_minimum_data()
-		if potential_photo is not None:
+		if potential_photo is None:
+			return SupervisorEvaluationState(self.user_id, self.client)
+		else:
 			POTENTIAL_BOARD.deletion(potential_photo)
 			return SupervisorEvaluationState(self.user_id, self.client, potential_photo.data, POTENTIAL_BOARD.length)
-		else:
-			await self.client.send_message(
-				self.user_id,
-				"عکسی در حال حاضر موجود نیست..."
-			)
-			return SupervisorInitialState(self.user_id, self.client)
 
 	def back_state(self):
 		POTENTIAL_BOARD.insert(RBNode(self.assigned_potential_obj))
 		return SupervisorInitialState(self.user_id, self.client)
 
 	async def default_function(self):
-		await self.client.send_photo(
-			self.user_id,
-			self.assigned_potential_obj.media_file_id,
-			f'عکسی که باید ارزیابی کنید. تعداد {self.potential_board_length} باقی است...',
-			reply_markup=SUPERVISOR_EVALUATION_KEYBOARD
-		)
+		if self.assigned_potential_obj is None:
+			await self.client.send_message(
+				self.user_id,
+				"عکسی در حال حاضر موجود نیست...",
+				reply_markup=ReplyKeyboardMarkup(
+					[
+						["◀  " + "بازگشت "]
+					],
+					resize_keyboard=True
+				)
+			)
+		else:
+			await self.client.send_photo(
+				self.user_id,
+				self.assigned_potential_obj.media_file_id,
+				f'عکسی که باید ارزیابی کنید. تعداد {self.potential_board_length} باقی است...',
+				reply_markup=SUPERVISOR_EVALUATION_KEYBOARD
+			)
 
-	async def confirm_photo(self):
+	def confirm_photo(self):
 		global MINIMUM_SCORE_IN_LEADER_BOARD
-		corresponding_leader_board_obj = HasPotentialObj.convert_to_leader_board_obj(self.assigned_potential_obj)
-		if corresponding_leader_board_obj.score > MINIMUM_SCORE_IN_LEADER_BOARD:
-			LEADER_BOARD.insert(SortedLinkListNode(corresponding_leader_board_obj))
-			leader_board_minimum_item = LEADER_BOARD.find_minimum_item()
-			if leader_board_minimum_item is not None:
-				MINIMUM_SCORE_IN_LEADER_BOARD = leader_board_minimum_item.data.score
+		if self.assigned_potential_obj is not None:
+			corresponding_leader_board_obj = HasPotentialObj.convert_to_leader_board_obj(self.assigned_potential_obj)
+			if corresponding_leader_board_obj.score > MINIMUM_SCORE_IN_LEADER_BOARD:
+				LEADER_BOARD.insert(SortedLinkListNode(corresponding_leader_board_obj))
+				leader_board_minimum_item = LEADER_BOARD.find_minimum_item()
+				if leader_board_minimum_item is not None:
+					MINIMUM_SCORE_IN_LEADER_BOARD = leader_board_minimum_item.data.score
 
-		await self.client.send_message(
-			self.user_id,
-			"عکس تایید شد..."
-		)
-
-	async def reject_photo(self):
-		await self.client.send_message(
-			self.user_id,
-			"Reject"
-		)
+	def reject_photo(self):
+		print(f'reject by {self.user_id}')
 
 	def json_serializer(self):
 		return {"class_type": str(self.__class__), "assign_obj": self.assigned_potential_obj.json_serializer()}

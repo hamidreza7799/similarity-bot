@@ -7,3 +7,4 @@ user_images
 config
 backup/*
 *.tsv
+test.py

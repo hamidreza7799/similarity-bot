@@ -12,74 +12,60 @@ import asyncio
 import threading
 
 USER_STATES = {}
-USER_STATES_THREADING_LOCK = threading.Lock()
 app = Client('config/my_bot', bot_token=bot_token, api_hash=api_hash, api_id=api_id)
 LOCK_RACE = True
-LOCK_RACE_THREADING_LOCK = threading.Lock()
+LOCK_RACE_ASYNC_LOCK = asyncio.Lock()
 
 
 @app.on_message(filters.new_chat_members | filters.command(['start']))
 async def welcome(_, message: Message):
 	global LOCK_RACE
-	LOCK_RACE_THREADING_LOCK.acquire()
-	USER_STATES_THREADING_LOCK.acquire()
-	if message.chat.id in SUPERVISOR_USERS:
-		if LOCK_RACE:
-			USER_STATES[message.chat.id] = SupervisorLockState(message.chat.id, app)
-			LOCK_RACE_THREADING_LOCK.release()
-			USER_STATES_THREADING_LOCK.release()
-			await app.send_message(
-				message.chat.id,
-				"This is text in initial state for supervisor",
-				reply_markup=ReplyKeyboardRemove()
-			)
+	async with LOCK_RACE_ASYNC_LOCK:
+		if message.chat.id in SUPERVISOR_USERS:
+			if LOCK_RACE:
+				USER_STATES[message.chat.id] = SupervisorLockState(message.chat.id, app)
+				await app.send_message(
+					message.chat.id,
+					"This is text in initial state for supervisor",
+					reply_markup=ReplyKeyboardRemove()
+				)
+			else:
+				USER_STATES[message.chat.id] = SupervisorInitialState(message.chat.id, app)
+				await app.send_message(
+					message.chat.id,
+					"This is text in initial state for supervisor",
+					reply_markup=SUPERVISOR_INITIAL_KEYBOARD
+				)
+		elif message.chat.id == ADMIN_USER:
+			if LOCK_RACE:
+				USER_STATES[message.chat.id] = AdminWaitForStartNewRace(message.chat.id, app)
+				await app.send_message(
+					message.chat.id,
+					"This is initial text of admin",
+					reply_markup=ReplyKeyboardRemove()
+				)
+			else:
+				USER_STATES[message.chat.id] = AdminInitialState(message.chat.id, app)
+				await app.send_message(
+					message.chat.id,
+					"This is initial of admin",
+					reply_markup=ADMIN_INITIAL_KEYBOARD
+				)
 		else:
-			USER_STATES[message.chat.id] = SupervisorInitialState(message.chat.id, app)
-			LOCK_RACE_THREADING_LOCK.release()
-			USER_STATES_THREADING_LOCK.release()
-			await app.send_message(
-				message.chat.id,
-				"This is text in initial state for supervisor",
-				reply_markup=SUPERVISOR_INITIAL_KEYBOARD
-			)
-	elif message.chat.id == ADMIN_USER:
-		if LOCK_RACE:
-			USER_STATES[message.chat.id] = AdminWaitForStartNewRace(message.chat.id, app)
-			LOCK_RACE_THREADING_LOCK.release()
-			USER_STATES_THREADING_LOCK.release()
-			await app.send_message(
-				message.chat.id,
-				"This is initial text of admin",
-				reply_markup=ReplyKeyboardRemove()
-			)
-		else:
-			USER_STATES[message.chat.id] = AdminInitialState(message.chat.id, app)
-			LOCK_RACE_THREADING_LOCK.release()
-			USER_STATES_THREADING_LOCK.release()
-			await app.send_message(
-				message.chat.id,
-				"This is initial of admin",
-				reply_markup=ADMIN_INITIAL_KEYBOARD
-			)
-	else:
-		if LOCK_RACE:
-			USER_STATES[message.chat.id] = NormalUserLockState(message.chat.id, app)
-			LOCK_RACE_THREADING_LOCK.release()
-			USER_STATES_THREADING_LOCK.release()
-			await app.send_message(
-				message.chat.id,
-				"This is initial for normal user",
-				reply_markup=ReplyKeyboardRemove()
-			)
-		else:
-			USER_STATES[message.chat.id] = NormalUserInitialState(message.chat.id, app)
-			LOCK_RACE_THREADING_LOCK.release()
-			USER_STATES_THREADING_LOCK.release()
-			await app.send_message(
-				message.chat.id,
-				"This is initial for normal user",
-				reply_markup=NORMAL_USER_INITIAL_KEYBOARD
-			)
+			if LOCK_RACE:
+				USER_STATES[message.chat.id] = NormalUserLockState(message.chat.id, app)
+				await app.send_message(
+					message.chat.id,
+					"This is initial for normal user",
+					reply_markup=ReplyKeyboardRemove()
+				)
+			else:
+				USER_STATES[message.chat.id] = NormalUserInitialState(message.chat.id, app)
+				await app.send_message(
+					message.chat.id,
+					"This is initial for normal user",
+					reply_markup=NORMAL_USER_INITIAL_KEYBOARD
+				)
 
 
 # Function for normal user and supervisor and admin
@@ -140,13 +126,15 @@ async def f(_, callback_query):
 @app.on_message(filters.regex("ارسال عکس") | filters.command(['send_photo']))
 async def change_initial_state_to_sending_photo_state(_, message: Message):
 	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
-	if user_state is not None:
-		if isinstance(user_state, NormalUserInitialState):
-			user_state = user_state.next_state()
-			USER_STATES[message.chat.id] = user_state
+	try:
+		if user_state is not None:
+			sending_photo_state = user_state.change_to_sending_photo_state()
+			USER_STATES[message.chat.id] = sending_photo_state
+			sending_photo_state.default_funtion()
+		else:
+			await welcome(_, message)
+	except:
 		await user_state.default_function()
-	else:
-		await welcome(_, message)
 
 
 # Function for normal user
@@ -168,13 +156,15 @@ async def save_user_photo(_, message: Message):
 @app.on_message(filters.regex("ارزیابی عکس‌ها") | filters.command(["evaluation"]))
 async def change_initial_state_to_evaluation_state_supervisor(_, message: Message):
 	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
-	if user_state is not None:
-		if isinstance(user_state, SupervisorInitialState):
-			user_state = await user_state.next_state()
-			USER_STATES[message.chat.id] = user_state
-		await user_state.default_function()
-	else:
-		await welcome(_, message)
+	try:
+		if user_state is not None:
+			evaluation_state = user_state.change_to_evaluation_state()
+			USER_STATES[message.chat.id] = evaluation_state
+			evaluation_state.dafault_function()
+		else:
+			await welcome(_, message)
+	except:
+		await user_state.dafault_function()
 
 
 # Function for supervisor
@@ -183,8 +173,8 @@ async def confirm_photo(_, message: Message):
 	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	try:
 		if user_state is not None:
-			await user_state.confirm_photo()
-			user_state = await user_state.next_state()
+			user_state.confirm_photo()
+			user_state = user_state.next_state()
 			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
 		else:
@@ -195,12 +185,12 @@ async def confirm_photo(_, message: Message):
 
 # Function for supervisor
 @app.on_message(filters.regex("رد") | filters.command(["reject"]))
-async def confirm_photo(_, message: Message):
+async def reject_photo(_, message: Message):
 	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
 	try:
 		if user_state is not None:
-			await user_state.reject_photo()
-			user_state = await user_state.next_state()
+			user_state.reject_photo()
+			user_state = user_state.next_state()
 			USER_STATES[message.chat.id] = user_state
 			await user_state.default_function()
 		else:
@@ -214,18 +204,19 @@ async def confirm_photo(_, message: Message):
 async def finish_race(_, message: Message):
 	global LOCK_RACE
 	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
-	try:
-		if user_state is not None:
-			LOCK_RACE = True
-			await user_state.finish_race(USER_STATES)
-			user_state = user_state.next_state()
-			USER_STATES[message.chat.id] = user_state
+	async with LOCK_RACE_ASYNC_LOCK:
+		try:
+			if user_state is not None:
+				LOCK_RACE = True
+				await user_state.finish_race(USER_STATES)
+				user_state = user_state.next_state()
+				USER_STATES[message.chat.id] = user_state
+				await user_state.default_function()
+			else:
+				await welcome(_, message)
+		except Exception as exception:
+			LOCK_RACE = False
 			await user_state.default_function()
-		else:
-			await welcome(_, message)
-	except Exception as exception:
-		LOCK_RACE = False
-		await user_state.default_function()
 
 
 # Function for admin
@@ -233,18 +224,19 @@ async def finish_race(_, message: Message):
 async def start_new_race(_, message: Message):
 	global LOCK_RACE
 	user_state = USER_STATES[message.chat.id] if message.chat.id in USER_STATES else None
-	try:
-		if user_state is not None:
-			LOCK_RACE = False
-			await user_state.start_new_race(USER_STATES, message)
-			user_state = user_state.next_state()
-			USER_STATES[message.chat.id] = user_state
+	async with LOCK_RACE_ASYNC_LOCK:
+		try:
+			if user_state is not None:
+				LOCK_RACE = False
+				await user_state.start_new_race(USER_STATES, message)
+				user_state = user_state.next_state()
+				USER_STATES[message.chat.id] = user_state
+				await user_state.default_function()
+			else:
+				await welcome(_, message)
+		except Exception as error:
+			LOCK_RACE = True
 			await user_state.default_function()
-		else:
-			await welcome(_, message)
-	except Exception as error:
-		LOCK_RACE = True
-		await user_state.default_function()
 
 
 @app.on_message(filters.all)
