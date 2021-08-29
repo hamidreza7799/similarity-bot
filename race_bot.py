@@ -250,6 +250,10 @@ async def message_handler(_, message: Message):
 
 async def main():
 	async with app:
+		await app.send_message(
+			ADMIN_USER,
+			'بات متصل شد...'
+		)
 		await idle()
 
 
