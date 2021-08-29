@@ -12,6 +12,7 @@ import asyncio
 import threading
 
 USER_STATES = {}
+USER_STATES_THREADING_LOCK = threading.Lock()
 app = Client('config/my_bot', bot_token=bot_token, api_hash=api_hash, api_id=api_id)
 LOCK_RACE = True
 LOCK_RACE_ASYNC_LOCK = asyncio.Lock()
@@ -26,14 +27,14 @@ async def welcome(_, message: Message):
 				USER_STATES[message.chat.id] = SupervisorLockState(message.chat.id, app)
 				await app.send_message(
 					message.chat.id,
-					"This is text in initial state for supervisor",
+					"شما به عنوان کاربر ناظر وارد شدید. فعلا مسابقه‌ای در جریان نیست...",
 					reply_markup=ReplyKeyboardRemove()
 				)
 			else:
 				USER_STATES[message.chat.id] = SupervisorInitialState(message.chat.id, app)
 				await app.send_message(
 					message.chat.id,
-					"This is text in initial state for supervisor",
+					"شما به عنوان کاربر ناظر وارد شدید...",
 					reply_markup=SUPERVISOR_INITIAL_KEYBOARD
 				)
 		elif message.chat.id == ADMIN_USER:
@@ -41,14 +42,14 @@ async def welcome(_, message: Message):
 				USER_STATES[message.chat.id] = AdminWaitForStartNewRace(message.chat.id, app)
 				await app.send_message(
 					message.chat.id,
-					"This is initial text of admin",
+					"شما ادمین هستید. برای شروع مسابقه‌ی جدید کافی است عکسی را ارسال کنید...",
 					reply_markup=ReplyKeyboardRemove()
 				)
 			else:
 				USER_STATES[message.chat.id] = AdminInitialState(message.chat.id, app)
 				await app.send_message(
 					message.chat.id,
-					"This is initial of admin",
+					"شما ادمین هستید...",
 					reply_markup=ADMIN_INITIAL_KEYBOARD
 				)
 		else:
@@ -56,14 +57,14 @@ async def welcome(_, message: Message):
 				USER_STATES[message.chat.id] = NormalUserLockState(message.chat.id, app)
 				await app.send_message(
 					message.chat.id,
-					"This is initial for normal user",
+					"لطفا منتظر باشد تا مسابقه‌ای شروع شود...",
 					reply_markup=ReplyKeyboardRemove()
 				)
 			else:
 				USER_STATES[message.chat.id] = NormalUserInitialState(message.chat.id, app)
 				await app.send_message(
 					message.chat.id,
-					"This is initial for normal user",
+					"شما کارهای زیر را می‌توانید انجام دهید",
 					reply_markup=NORMAL_USER_INITIAL_KEYBOARD
 				)
 

@@ -11,7 +11,7 @@ NEXT_STATES = {
 	"normal_user_initial_state": 0
 }
 
-BACKUP_MINUTES = 1
+BACKUP_MINUTES = 15
 ADMIN_INITIAL_KEYBOARD = ReplyKeyboardMarkup(
 	[
 		["📣  " + "مشاهده نتایج "],  # First row

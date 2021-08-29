@@ -12,30 +12,14 @@ import threading
 
 AIPA_CLIENT = AipaRestClient()
 AIPA_CLIENT.get_valid_access_token()
-RACE_PHOTO_MEDIA_LINK = "https://t.me/c/-1000925175130/252"
-RACE_PHOTO_MEDIA_FILE_ID = "AgACAgQAAxkBAAP8YSDEOnTz3YlFV0BrkEi-4ponqG8AAva1MRvPXAhR8geW3vrqkFddxrUvXQADAQADAgADeQAD88wCAAEeBA"
-RACE_PHOTO_FILE = "ronaldo"
+RACE_PHOTO_MEDIA_LINK = None
+RACE_PHOTO_MEDIA_FILE_ID = None
+RACE_PHOTO_FILE = None
+RACE_PHOTO_FILE_THREADING_LOCK = threading.Lock()
 LEADER_BOARD_MAX_LENGTH = 10
-MINIMUM_SCORE_IN_LEADER_BOARD = -1
+MINIMUM_SCORE_IN_LEADER_BOARD = 0.4
 LEADER_BOARD = SortedLinkedList()
 POTENTIAL_BOARD = RBTree()
-
-LEADER_BOARD.insert(SortedLinkListNode(LeaderBoardObj(1, "https://t.me/c/-1000088202234/295",
-                                                      'AgACAgQAAxkBAAIBJ2Eg5rzBSUoOKTbqFgwICUUjiMxCAAIBtTEbJuYIUUo-xujHC2C7ZBZJLl0AAwEAAwIAA3gAA7s-BQABHgQ',
-                                                      "C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\user_images\\ronaldo\\race_image.jpg",
-                                                      12)))
-LEADER_BOARD.insert(SortedLinkListNode(LeaderBoardObj(2, "https://t.me/c/-1000925175130/252",
-                                                      "AgACAgQAAxkBAAP8YSDEOnTz3YlFV0BrkEi-4ponqG8AAva1MRvPXAhR8geW3vrqkFddxrUvXQADAQADAgADeQAD88wCAAEeBA",
-                                                      "C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\user_images\\ronaldo\\race_image.jpg",
-                                                      10)))
-POTENTIAL_BOARD.insert(RBNode(HasPotentialObj(3, "https://t.me/c/-1000088202234/295",
-                                              'AgACAgQAAxkBAAIBJ2Eg5rzBSUoOKTbqFgwICUUjiMxCAAIBtTEbJuYIUUo-xujHC2C7ZBZJLl0AAwEAAwIAA3gAA7s-BQABHgQ',
-                                              "C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\user_images\\ronaldo\\race_image.jpg",
-                                              24)))
-POTENTIAL_BOARD.insert(RBNode(HasPotentialObj(4, "https://t.me/c/-1000088202234/295",
-                                              'AgACAgQAAxkBAAIBJ2Eg5rzBSUoOKTbqFgwICUUjiMxCAAIBtTEbJuYIUUo-xujHC2C7ZBZJLl0AAwEAAwIAA3gAA7s-BQABHgQ',
-                                              "C:\\Users\\asus\\Desktop\\Arman\\similarity_race_bot\\user_images\\ronaldo\\race_image.jpg",
-                                              24)))
 
 
 class State(ABC):
@@ -89,7 +73,7 @@ class NormalUserLockState(State):
 		return self
 
 	def json_serializer(self):
-		return {"class_type": self.__class__}
+		return {"class_type": str(self.__class__)}
 
 
 class NormalUserInitialState(State):
@@ -430,10 +414,11 @@ class AdminWaitForStartNewRace(State):
 	async def start_new_race(self, user_states: {}, message: Message):
 		# Set race information
 		self.__set_race_information(message)
-		# Remove potential board
-		self.__remove_potential_board()
-		# Remove leader board
-		self.__remove_leader_board()
+		with RACE_PHOTO_FILE_THREADING_LOCK:
+			# Remove potential board
+			self.__remove_potential_board()
+			# Remove leader board
+			self.__remove_leader_board()
 		# Unlock current users state
 		self.__unlock_all_users(user_states)
 		# Send start race message for all users
@@ -493,19 +478,22 @@ from storage.backup import BackupDriver
 
 def backup_potential_board():
 	global RACE_PHOTO_FILE
-	if RACE_PHOTO_FILE is not None:
-		potential_board_json_file_path = os.path.join(os.getcwd(), 'backup', "potential_boards",
-		                                              RACE_PHOTO_FILE + ".json")
-		BackupDriver.backup_potential_board(potential_board_json_file_path, POTENTIAL_BOARD)
-	threading.Timer(BACKUP_MINUTES * 60, backup_potential_board).start()
+	with RACE_PHOTO_FILE_THREADING_LOCK:
+		if RACE_PHOTO_FILE is not None:
+			potential_board_json_file_path = os.path.join(os.getcwd(), 'backup', "potential_boards",
+			                                              RACE_PHOTO_FILE + ".json")
+			BackupDriver.backup_potential_board(potential_board_json_file_path, POTENTIAL_BOARD)
+		threading.Timer(BACKUP_MINUTES * 60, backup_potential_board).start()
 
 
 def backup_leader_board():
 	global RACE_PHOTO_FILE
-	if RACE_PHOTO_FILE is not None:
-		leader_board_json_file_path = os.path.join(os.getcwd(), 'backup', "leader_boards", RACE_PHOTO_FILE + ".json")
-		BackupDriver.backup_leader_board(leader_board_json_file_path, LEADER_BOARD)
-	threading.Timer(BACKUP_MINUTES * 60, backup_leader_board).start()
+	with RACE_PHOTO_FILE_THREADING_LOCK:
+		if RACE_PHOTO_FILE is not None:
+			leader_board_json_file_path = os.path.join(os.getcwd(), 'backup', "leader_boards",
+			                                           RACE_PHOTO_FILE + ".json")
+			BackupDriver.backup_leader_board(leader_board_json_file_path, LEADER_BOARD)
+		threading.Timer(BACKUP_MINUTES * 60, backup_leader_board).start()
 
 
 threading.Timer(BACKUP_MINUTES * 60, backup_potential_board).start()
