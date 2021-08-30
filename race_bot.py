@@ -131,10 +131,10 @@ async def change_initial_state_to_sending_photo_state(_, message: Message):
 		if user_state is not None:
 			sending_photo_state = user_state.change_to_sending_photo_state()
 			USER_STATES[message.chat.id] = sending_photo_state
-			sending_photo_state.default_funtion()
+			await sending_photo_state.default_function()
 		else:
 			await welcome(_, message)
-	except:
+	except Exception as error:
 		await user_state.default_function()
 
 
@@ -161,11 +161,11 @@ async def change_initial_state_to_evaluation_state_supervisor(_, message: Messag
 		if user_state is not None:
 			evaluation_state = user_state.change_to_evaluation_state()
 			USER_STATES[message.chat.id] = evaluation_state
-			evaluation_state.dafault_function()
+			await evaluation_state.default_function()
 		else:
 			await welcome(_, message)
 	except:
-		await user_state.dafault_function()
+		await user_state.default_function()
 
 
 # Function for supervisor

@@ -4,7 +4,7 @@ import os
 from pyrogram import filters
 from pyrogram.types import ReplyKeyboardMarkup
 
-ADMIN_USER = 88202234
+ADMIN_USER = 83457978
 SUPERVISOR_USERS = []
 
 NEXT_STATES = {
