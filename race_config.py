@@ -5,7 +5,7 @@ from pyrogram import filters
 from pyrogram.types import ReplyKeyboardMarkup
 
 ADMIN_USER = 83457978
-SUPERVISOR_USERS = []
+SUPERVISOR_USERS = [73974992, ]
 
 NEXT_STATES = {
 	"normal_user_initial_state": 0
