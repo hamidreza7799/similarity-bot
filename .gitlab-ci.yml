@@ -9,7 +9,6 @@ variables:
 init-project:
   stage: init
   script:
-    - -i
     - pwd
     - mkdir /home/projects
     - cd /home/projects
