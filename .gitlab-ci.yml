@@ -9,9 +9,10 @@ variables:
 init-project:
   stage: init
   script:
+    - exit
     - pwd
-    - mkdir /home/gitlab-runner/projects
-    - cd /home/gitlab-runner/projects
+    - mkdir /home/projects
+    - cd /home/projects
     - git clone ssh://git@gitlab.farakaft.ir/h.azarbad/similarity-bot.git
     - cd similarity-bot
     - docker-compose up -d
