@@ -8,6 +8,7 @@ variables:
 
 init-project:
   stage: init
+  image: dokcer:latest
   script:
     - pwd
     - mkdir /home/gitlab-runner/projects
