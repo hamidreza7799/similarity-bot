@@ -1,4 +1,4 @@
-image: docker:latest
+image: python:3.8-alpine
 
 stages:
   - init
@@ -8,7 +8,6 @@ variables:
 
 init-project:
   stage: init
-  image: dokcer:latest
   script:
     - pwd
     - mkdir /home/gitlab-runner/projects
