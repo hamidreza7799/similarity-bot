@@ -1,0 +1,18 @@
+image: python:3.8-alpine
+
+stages:
+  - init
+
+variables:
+  GIT_STRATEGY: none
+
+init-project:
+  stage: init
+  script:
+    - pwd
+    - mkdir /srv/projects
+    - chown gitlab-runner:root /srv/projects
+    - cd /srv/projects
+    - git clone ssh://git@gitlab.farakaft.ir/persian-chitchat/sabad.git
+    - cd sabad
+    - docker-compose up -d
