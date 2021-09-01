@@ -6,7 +6,11 @@ ENV PYTHONUNBUFFERED 1
 RUN mkdir /similarity_race_bot
 WORKDIR /similarity_race_bot
 COPY . /similarity_race_bot
-
+RUN mkdir backup
+RUN mkdir backup/leader_boards
+RUN mkdir backup/potential_boards
+RUN mkdir user_images
+RUN mkdir config
 #ADD ./requirements.txt /sabad
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
