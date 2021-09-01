@@ -10,8 +10,8 @@ init-project:
   stage: init
   script:
     - pwd
-    - mkdir /home/projects
-    - cd /home/projects
+    - mkdir /home/gitlab-runner/projects
+    - cd /home/gitlab-runner/projects
     - git clone ssh://git@gitlab.farakaft.ir/h.azarbad/similarity-bot.git
     - cd similarity-bot
     - docker-compose up -d
