@@ -2,6 +2,9 @@ image: python:3.8-alpine
 
 stages:
   - init
+  - build
+  - test
+  - deploy
 
 variables:
   GIT_STRATEGY: none
@@ -15,3 +18,22 @@ init-project:
     - git clone ssh://git@gitlab.farakaft.ir/h.azarbad/similarity-bot.git
     - cd similarity-bot
     - docker-compose up -d
+  after_script:
+    - echo "Project is inital"
+  only:
+    - init
+
+test-project:
+  stage: test
+  script:
+    - echo "We don't have any test for out project!!!"
+
+deploy-project:
+  stage: deploy
+  script:
+    - cd /home/gitlab-runner/projects/similarity-bot
+    - docker-compose up -d
+  only:
+    - master
+#    - main
+    - dockerize
