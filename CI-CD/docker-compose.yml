@@ -1,0 +1,15 @@
+version: '3.1'
+
+services:
+  gitlab-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bot-gitlab-runner
+    volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - gitlab-runner-config:/etc/gitlab-runner
+
+volumes:
+  gitlab-runner-config:
+    external: true
