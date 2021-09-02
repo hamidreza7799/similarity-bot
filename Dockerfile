@@ -11,7 +11,6 @@ RUN mkdir backup/leader_boards
 RUN mkdir backup/potential_boards
 RUN mkdir user_images
 RUN mkdir config
-#ADD ./requirements.txt /sabad
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 CMD ["python", "race_bot.py"]

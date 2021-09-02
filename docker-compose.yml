@@ -11,3 +11,4 @@ services:
     - .:/similarity_race_bot
     ports:
     - "1080:1080"
+

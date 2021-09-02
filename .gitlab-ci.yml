@@ -13,7 +13,6 @@ init-project:
   stage: init
   script:
     - pwd
-    - mkdir /home/gitlab-runner/projects
     - cd /home/gitlab-runner/projects
     - git clone ssh://git@gitlab.farakaft.ir/h.azarbad/similarity-bot.git
     - cd similarity-bot
@@ -21,7 +20,7 @@ init-project:
   after_script:
     - echo "Project is inital"
   only:
-    - init
+    - main
 
 test-project:
   stage: test

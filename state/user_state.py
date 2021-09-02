@@ -10,8 +10,8 @@ from race_config import NORMAL_USER_INITIAL_KEYBOARD, SUPERVISOR_INITIAL_KEYBOAR
 from storage.data import *
 import threading
 
-AIPA_CLIENT = AipaRestClient()
-AIPA_CLIENT.get_valid_access_token()
+AIPA_CLIENT = None
+#AIPA_CLIENT.get_valid_access_token()
 RACE_PHOTO_MEDIA_LINK = None
 RACE_PHOTO_MEDIA_FILE_ID = None
 RACE_PHOTO_FILE = None
