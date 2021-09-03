@@ -20,6 +20,14 @@ init-project:
   after_script:
     - echo "Project is inital"
   only:
+    - init
+
+build-project:
+  stage: build
+  script:
+    - cd /home/gitlab-runner/projects/similarity-bot
+    - git pull
+  only:
     - main
 
 test-project:
@@ -33,6 +41,4 @@ deploy-project:
     - cd /home/gitlab-runner/projects/similarity-bot
     - docker-compose up -d
   only:
-    - master
-#    - main
-    - dockerize
+    - main

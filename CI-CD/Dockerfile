@@ -27,4 +27,4 @@ RUN gitlab-runner register \
   --access-level="not_protected"
 RUN mkdir /home/gitlab-runner/.ssh
 RUN ssh-keygen -t rsa -N "" -f /home/gitlab-runner/.ssh/id_rsa
-RUN cat /home/gitlab-runner/.ssh/id_rsa.pub
+#RUN cat /home/gitlab-runner/.ssh/id_rsa.pub
