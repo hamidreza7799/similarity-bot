@@ -6,6 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
 
+    command: bash -c "python test.py"
     container_name: similarity_race_bot
     volumes:
     - .:/similarity_race_bot
